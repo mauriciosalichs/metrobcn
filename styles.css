@@ -1,0 +1,22 @@
+body {
+  margin: 0;
+  font-family: sans-serif;
+  text-align: center;
+}
+
+button {
+  width: 100%;
+  padding: 20px;
+  font-size: 1.5rem;
+  border: none;
+  cursor: pointer;
+}
+
+.hidden {
+  display: none;
+}
+
+#text-container {
+  margin: 20px;
+  font-size: 1.2rem;
+}
