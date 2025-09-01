@@ -3,64 +3,77 @@ const subButtons = document.getElementById('sub-buttons');
 const textContainer = document.getElementById('text-container');
 
 // Colores de los botones principales
-const colors = ["#e74c3c", "#8e44ad", "#27ae60", "#f39c12", "#2980b9"];
-const labels = ["L1", "L2", "L3", "L4", "L5"];
+const colors = ["#e74c3c", "#e74c3c", "#8e44ad", "#8e44ad", "#27ae60", "#27ae60", "#f39c12", "#f39c12", "#2980b9", ];
+const lines = ["L1 - Fondo", "L1 - Hospital de Bellvitge", "L2 - Badalona", "L2 - Poble Sec", "L3 - Trinitat Nova", "L3 - Zona Universitaria", "L4 - La Pau", "L4 - Trinitat Nova", "L5 - Vall d'Hebron", "L5 - Cornellà"];
 
-// Estado inicial → pantalla principal
-renderMain();
+const stops_l3 = [
+ "Trinitat Nova",
+ "Roquetes",
+ "Canyelles",
+ "Valldaura",
+ "Mundet",
+ "Montbau",
+ "Vall d'Hebron",
+ "Cocheras de Sant Genís",
+ "Penitents",
+ "Vallcarca",
+ "Lesseps",
+ "Fontana",
+ "Diagonal",
+ "Paseo de Gracia",
+ "Catalunya",
+ "Liceu",
+ "Drassanes",
+ "Paral·lel",
+ "Poble Sec",
+ "Espanya",
+ "Tarragona",
+ "Sants Estació",
+ "Plaça del Centre",
+ "Les Corts",
+ "Maria Cristina",
+ "Palau Reial",
+ "Zona Universitària"
+]
 
-// Manejar botón atrás
-window.onpopstate = function(event) {
-  if (!event.state || event.state.view === "main") {
-    renderMain();
-  } else if (event.state.view.startsWith("subset-")) {
-    renderSubButtons(event.state.label);
-  } else if (event.state.view.startsWith("text-")) {
-    fetchText(event.state.id, false); // false = no pushear otro estado
+
+// Crear botones principales
+lines.forEach((label, index) => {
+  const btn = document.createElement('button');
+  btn.textContent = label;
+  btn.style.backgroundColor = colors[index];
+  btn.addEventListener('click', () => showSubButtons(label));
+  mainButtons.appendChild(btn);
+});
+
+// Mostrar subset de 10 botones
+function showSubButtons(label) {
+  subButtons.innerHTML = '';
+  mainButtons.classList.add('hidden');
+  subButtons.classList.remove('hidden');
+  var stops;
+  
+  if (label == "L3 - Trinitat Nova") {
+    stops = stops_l3.reverse()
+  } else if (label == "L3 - Zona Universitaria")  {
+    stops = stops_l3
+  } else {
+    stops = ["Aun no definido"]
   }
-};
 
-function renderMain() {
-  mainButtons.innerHTML = "";
-  subButtons.innerHTML = "";
-  textContainer.innerHTML = "";
-
-  labels.forEach((label, index) => {
+  for (var i=0, item; item = stops[i]; i++) {
     const btn = document.createElement('button');
-    btn.textContent = label;
-    btn.style.backgroundColor = colors[index];
-    btn.addEventListener('click', () => {
-      history.pushState({view: "subset-" + label, label}, "", "");
-      renderSubButtons(label);
-    });
-    mainButtons.appendChild(btn);
-  });
-}
-
-function renderSubButtons(label) {
-  mainButtons.innerHTML = "";
-  subButtons.innerHTML = "";
-  textContainer.innerHTML = "";
-
-  for (let i = 1; i <= 10; i++) {
-    const btn = document.createElement('button');
-    btn.textContent = `${label}-${i}`;
+    btn.textContent = `${item}`;
     btn.style.backgroundColor = "#bdc3c7";
-    btn.addEventListener('click', () => {
-      history.pushState({view: "text-" + label + "-" + i, id: `${label}-${i}`}, "", "");
-      fetchText(`${label}-${i}`, true);
-    });
+    btn.addEventListener('click', () => fetchText(`${label}`));
     subButtons.appendChild(btn);
   }
 }
 
+// Función para consultar texto en la web
 let intervalId;
-function fetchText(id, pushState = true) {
+function fetchText(id) {
   if (intervalId) clearInterval(intervalId);
-
-  mainButtons.innerHTML = "";
-  subButtons.innerHTML = "";
-  textContainer.innerHTML = "Cargando...";
 
   async function update() {
     try {
@@ -72,7 +85,6 @@ function fetchText(id, pushState = true) {
     }
   }
 
-  update();
-  intervalId = setInterval(update, 10000);
+  update(); // primer fetch inmediato
+  intervalId = setInterval(update, 10000); // cada 10 segundos
 }
-
