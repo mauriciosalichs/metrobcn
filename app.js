@@ -100,10 +100,14 @@ function showSubButtons(label, id_sentit) {
 
 // Función para consultar texto en la web
 let intervalId;
+let countdownIntervalId;
 function fetchText(line_number, sentit, station_name) {
   console.log("In line number", line_number, "fetching", station_name, "with sentit", sentit);
   if (intervalId) clearInterval(intervalId);
+  if (countdownIntervalId) clearInterval(countdownIntervalId);
   subButtons.classList.add('hidden');
+  let secondsArrivals = [];
+
   async function update() {
     try {
       const key = station_name.trim().toLowerCase();
@@ -115,22 +119,37 @@ function fetchText(line_number, sentit, station_name) {
       const response = await fetch(`https://api.tmb.cat/v1/itransit/metro/estacions?estacions=${station_id}&app_id=${app_id}&app_key=${app_key}`);
       const data = await response.json();
       console.log(JSON.stringify(data, null, 2));
-      console.log("TS", data.linies);
+      if (data.timestamp) {
+        var now = new Date(data.timestamp);
+        console.log("Timestamp:", now.toLocaleString());
+      } else {
+        console.log("No timestamp available");
+        textContainer.innerHTML = "<p>No se encontró información de tiempo.</p>";
+        return;
+      }
       // Custom pretty print
       let output = "";
+      secondsArrivals = [];
       if (data.linies && data.linies.length > 0) {
         const linia = data.linies[0];
         output += `Linea: ${linia.nom_linia} <br>`;
-  
         if (linia.estacions && linia.estacions.length > 0) {
           linia.estacions.forEach(est => {
             if (est.linies_trajectes && est.linies_trajectes.length > 0 && est.id_sentit == sentit) {
               est.linies_trajectes.forEach(traj => {
                 output += `Sentido: ${traj.desti_trajecte} <br>`;
                 if (traj.propers_trens && traj.propers_trens.length > 0) {
-                  const firstTrain = traj.propers_trens[0];
-                  output += `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Próxima llegada:<br>`;
-                  output += `<span style="color:red;font-size:2em;">${new Date(firstTrain.temps_arribada).toLocaleTimeString()}</span><br>`;
+                  traj.propers_trens.forEach((train, idx) => {
+                    if (idx < 2) { // solo mostrar los dos primeros
+                      const seconds = Math.round((train.temps_arribada - now.getTime()) / 1000);
+                      secondsArrivals[idx] = seconds;
+                      let proxima_llegada_label;
+                      if (idx == 0) proxima_llegada_label = "Próxima llegada: ";
+                      if (idx == 1) proxima_llegada_label = "Siguiente llegada: ";
+                      output += `${proxima_llegada_label}<br>${new Date(train.temps_arribada).toLocaleTimeString()}<br>`;
+                      output += `<div id="secondsToArrival${idx + 1}" style="color:red;font-size:${7 - (idx*3)}em;margin-top:10px;">${seconds}</div>`;
+                    }
+                  });
                 } else {
                   output += `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Próxima llegada: No disponible<br>`;
                 }
@@ -138,8 +157,21 @@ function fetchText(line_number, sentit, station_name) {
             }
           });
         }
-        console.log("OUTPUT",output);
         textContainer.innerHTML = output;
+
+        // Decrement both seconds counters every second
+        if (countdownIntervalId) clearInterval(countdownIntervalId);
+        countdownIntervalId = setInterval(() => {
+          secondsArrivals.forEach((sec, idx) => {
+            const el = document.getElementById(`secondsToArrival${idx + 1}`);
+            if (el) {
+              let current = parseInt(el.textContent, 10);
+              if (current > 0) {
+                el.textContent = current - 1;
+              }
+            }
+          });
+        }, 1000);
       } else {
         textContainer.innerHTML = `[${station_name}] Sin información`;
       }
@@ -149,5 +181,5 @@ function fetchText(line_number, sentit, station_name) {
   }
 
   update(); // primer fetch inmediato
-  intervalId = setInterval(update, 10000); // cada 10 segundos
+  intervalId = setInterval(update, 10000); // actualiza todo cada 10 segundos
 }
