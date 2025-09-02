@@ -8,7 +8,17 @@ const app_key = '841c8ca5a916a874dd9709d32b73ce88';
 // Colores de los botones principales
 const colors = ["#e74c3c", "#e74c3c", "#8e44ad", "#8e44ad", "#27ae60", "#27ae60", "#f39c12", "#f39c12", "#2980b9", "#2980b9"];
 const lines = ["L1 - Fondo", "L1 - Hospital de Bellvitge", "L2 - Badalona", "L2 - Poble Sec", "L3 - Trinitat Nova", "L3 - Zona Universitaria", "L4 - La Pau", "L4 - Trinitat Nova", "L5 - Vall d'Hebron", "L5 - Cornellà"];
-
+// sentit:
+// L1 - Fondo
+// L1 - Hospital de Bellvitge
+// L2 - Badalona
+// L2 - Poble Sec
+// L3 - Trinitat Nova: 1
+// L3 - Zona Universitaria: 2
+// L4 - La Pau
+// L4 - Trinitat Nova
+// L5 - Vall d'Hebron
+// L5 - Cornellà
 const stops_l3 = [
  "Trinitat Nova",
  "Roquetes",
@@ -36,7 +46,7 @@ const stops_l3 = [
  "Les Corts",
  "Maria Cristina",
  "Palau Reial",
- "Zona Universitària"
+ "Zona Universitaria"
 ]
 
 // Parse stations.csv and build a mapping from name to id
@@ -57,12 +67,14 @@ lines.forEach((label, index) => {
   const btn = document.createElement('button');
   btn.textContent = label;
   btn.style.backgroundColor = colors[index];
-  btn.addEventListener('click', () => showSubButtons(label));
+  let id_sentit = (index % 2) + 1; // <-- assign id_sentit as requested
+  btn.addEventListener('click', () => showSubButtons(label, id_sentit));
   mainButtons.appendChild(btn);
 });
 
 // Mostrar subset de 10 botones
-function showSubButtons(label) {
+function showSubButtons(label, id_sentit) {
+  let line = label.split(" - ")[0];
   subButtons.innerHTML = '';
   mainButtons.classList.add('hidden');
   subButtons.classList.remove('hidden');
@@ -81,16 +93,15 @@ function showSubButtons(label) {
     const btn = document.createElement('button');
     btn.textContent = `${item}`;
     btn.style.backgroundColor = "#bdc3c7";
-    btn.addEventListener('click', () => fetchText(item));
+    btn.addEventListener('click', () => fetchText(line, id_sentit, item)); // <-- pass id_sentit
     subButtons.appendChild(btn);
   }
 }
 
 // Función para consultar texto en la web
 let intervalId;
-function fetchText(station_name) {
-  console.log("Fetching", station_name);
-  console.log("Looking in",stationNameToId)
+function fetchText(line_number, sentit, station_name) {
+  console.log("In line number", line_number, "fetching", station_name, "with sentit", sentit);
   if (intervalId) clearInterval(intervalId);
   subButtons.classList.add('hidden');
   async function update() {
@@ -109,10 +120,10 @@ function fetchText(station_name) {
       let output = "";
       if (data.linies && data.linies.length > 0) {
         const linia = data.linies[0];
-        output += `Linea: ${linia.nom_linia}<br>`;
+        output += `Linea: ${linia.nom_linia} <br>`;
         if (linia.estacions && linia.estacions.length > 0) {
           linia.estacions.forEach(est => {
-            if (est.linies_trajectes && est.linies_trajectes.length > 0 && est.id_sentit == 1) {
+            if (est.linies_trajectes && est.linies_trajectes.length > 0 && est.id_sentit == sentit) {
               est.linies_trajectes.forEach(traj => {
                 if (traj.propers_trens && traj.propers_trens.length > 0) {
                   const firstTrain = traj.propers_trens[0];
