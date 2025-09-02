@@ -222,7 +222,12 @@ function fetchText(line_number, sentit, station_name) {
       let output = "";
       secondsArrivals = [];
       if (data.linies && data.linies.length > 0) {
-        const linia = data.linies[0];
+        const linia = data.linies[0]
+        const line_name = linia.nom_linia;
+        if (line_name != line_number) {
+          output += `Solo se encuentra infromación para la linea ${line_name}`;
+          return;
+        }
         output += `Linea: ${linia.nom_linia} <br>`;
         output += `Estación: ${key} <br>`;
         if (linia.estacions && linia.estacions.length > 0) {
