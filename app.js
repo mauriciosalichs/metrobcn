@@ -7,18 +7,73 @@ const app_key = '841c8ca5a916a874dd9709d32b73ce88';
 
 // Colores de los botones principales
 const colors = ["#e74c3c", "#e74c3c", "#8e44ad", "#8e44ad", "#27ae60", "#27ae60", "#f39c12", "#f39c12", "#2980b9", "#2980b9"];
-const lines = ["L1 - Fondo", "L1 - Hospital de Bellvitge", "L2 - Badalona", "L2 - Poble Sec", "L3 - Trinitat Nova", "L3 - Zona Universitaria", "L4 - La Pau", "L4 - Trinitat Nova", "L5 - Vall d'Hebron", "L5 - Cornellà"];
+const lines = ["L1 - Fondo", "L1 - Hospital de Bellvitge", "L2 - Badalona Pompeu Fabra", "L2 - Paral·lel", "L3 - Trinitat Nova", "L3 - Zona Universitaria", "L4 - Trinitat Nova", "L4 - La Pau", "L5 - Vall d'Hebron", "L5 - Cornellà"];
 // sentit:
-// L1 - Fondo
-// L1 - Hospital de Bellvitge
-// L2 - Badalona
-// L2 - Poble Sec
+// L1 - Fondo: 1
+// L1 - Hospital de Bellvitge: 2
+// L2 - Badalona: 1
+// L2 - Poble Sec: 2
 // L3 - Trinitat Nova: 1
 // L3 - Zona Universitaria: 2
-// L4 - La Pau
-// L4 - Trinitat Nova
-// L5 - Vall d'Hebron
-// L5 - Cornellà
+// L4 - Trinitat Nova: 1
+// L4 - La Pau: 2
+// L5 - Vall d'Hebron: 1
+// L5 - Cornellà: 2
+
+const stops_l1 = [
+  "Hospital de Bellvitge",
+  "Bellvitge",
+  "Av. Carrilet",
+  "Rambla Just Oliveras",
+  "Can Serra",
+  "Florida",
+  "Torrassa",
+  "Santa Eulàlia",
+  "Mercat Nou",
+  "Plaça de Sants",
+  "Hostafrancs",
+  "Espanya",
+  "Rocafort",
+  "Urgell",
+  "Universitat",
+  "Catalunya",
+  "Urquinaona",
+  "Arc de Triomf",
+  "Marina",
+  "Glòries",
+  "Clot",
+  "Navas",
+  "La Sagrera",
+  "Fabra i Puig",
+  "Sant Andreu",
+  "Torras i Bages",
+  "Trinitat Vella",
+  "Baró de Viver",
+  "Santa Coloma",
+  "Fondo"
+];
+
+const stops_l2 = [
+  "Badalona Pompeu Fabra",
+  "Pep Ventura",
+  "Gorg",
+  "Sant Roc",
+  "Artigues | Sant Adrià",
+  "Verneda",
+  "La Pau",
+  "Sant Martí",
+  "Bac de Roda",
+  "Clot",
+  "Encants",
+  "Sagrada Família",
+  "Monumental",
+  "Tetuan",
+  "Passeig de Gràcia",
+  "Universitat",
+  "Sant Antoni",
+  "Paral·lel"
+]
+
 const stops_l3 = [
  "Trinitat Nova",
  "Roquetes",
@@ -48,6 +103,30 @@ const stops_l3 = [
  "Palau Reial",
  "Zona Universitaria"
 ]
+
+const stops_l4 = [
+  "Trinitat Nova",
+  "Via Júlia",
+  "Llucmajor",
+  "Maragall",
+  "Guinardó | Hospital de Sant Pau",
+  "Alfons X",
+  "Joanic",
+  "Verdaguer",
+  "Girona",
+  "Passeig de Gràcia",
+  "Jaume I",
+  "Barceloneta",
+  "Ciutadella | Vila Olímpica",
+  "Bogatell",
+  "Llacuna",
+  "Poblenou",
+  "Selva de Mar",
+  "El Maresme | Fòrum",
+  "Besòs Mar",
+  "Besòs",
+  "La Pau"
+];
 
 // Parse stations.csv and build a mapping from name to id
 let stationNameToId = {};
@@ -80,10 +159,22 @@ function showSubButtons(label, id_sentit) {
   subButtons.classList.remove('hidden');
   var stops;
   
-  if (label == "L3 - Trinitat Nova") {
-    stops = stops_l3.reverse()
+  if (label == "L1 - Fondo") {
+    stops = stops_l1
+  } else if (label == "L1 - Hospital de Bellvitge") {
+    stops = stops_l1.reverse()
+  } else if (label == "L2 - Paral·lel") {
+    stops = stops_l2
+  } else if (label == "L2 - Badalona Pompeu Fabra") {
+    stops = stops_l2.reverse()
   } else if (label == "L3 - Zona Universitaria")  {
     stops = stops_l3
+  } else if (label == "L3 - Trinitat Nova") {
+    stops = stops_l3.reverse()
+  } else if (label == "L4 - La Pau") {
+    stops = stops_l4
+  } else if (label == "L4 - Trinitat Nova") {
+    stops = stops_l4.reverse()
   } else {
     stops = ["Aun no definido"]
   }
@@ -133,6 +224,7 @@ function fetchText(line_number, sentit, station_name) {
       if (data.linies && data.linies.length > 0) {
         const linia = data.linies[0];
         output += `Linea: ${linia.nom_linia} <br>`;
+        output += `Estación: ${key} <br>`;
         if (linia.estacions && linia.estacions.length > 0) {
           linia.estacions.forEach(est => {
             if (est.linies_trajectes && est.linies_trajectes.length > 0 && est.id_sentit == sentit) {
