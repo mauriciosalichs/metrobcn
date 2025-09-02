@@ -23,7 +23,7 @@ const stops_l3 = [
  "Lesseps",
  "Fontana",
  "Diagonal",
- "Paseo de Gracia",
+ "Passeig de Gràcia",
  "Catalunya",
  "Liceu",
  "Drassanes",
@@ -39,6 +39,18 @@ const stops_l3 = [
  "Zona Universitària"
 ]
 
+// Parse stations.csv and build a mapping from name to id
+let stationNameToId = {};
+fetch('stations.csv')
+  .then(response => response.text())
+  .then(text => {
+    text.split('\n').forEach(line => {
+      const [id, name] = line.split(',');
+      if (id && name) {
+        stationNameToId[name.trim().toLowerCase()] = id.trim();
+      }
+    });
+  });
 
 // Crear botones principales
 lines.forEach((label, index) => {
@@ -64,31 +76,58 @@ function showSubButtons(label) {
     stops = ["Aun no definido"]
   }
 
-  for (var i=0, item; item = stops[i]; i++) {
+  for (let i = 0; i < stops.length; i++) {
+    let item = stops[i];
     const btn = document.createElement('button');
     btn.textContent = `${item}`;
     btn.style.backgroundColor = "#bdc3c7";
-    btn.addEventListener('click', () => fetchText(`${label}`));
+    btn.addEventListener('click', () => fetchText(item));
     subButtons.appendChild(btn);
   }
 }
 
 // Función para consultar texto en la web
 let intervalId;
-function fetchText(id) {
-
+function fetchText(station_name) {
+  console.log("Fetching", station_name);
+  console.log("Looking in",stationNameToId)
   if (intervalId) clearInterval(intervalId);
   subButtons.classList.add('hidden');
   async function update() {
     try {
-      const response = await fetch(`https://api.tmb.cat/v1/itransit/metro/estacions?estacions=120&app_id=${app_id}&app_key=${app_key}`);
+      const key = station_name.trim().toLowerCase();
+      const station_id = stationNameToId[key];
+      if (!station_id) {
+        textContainer.textContent = `No se encontró el ID para la estación "${station_name}"`;
+        return;
+      }
+      const response = await fetch(`https://api.tmb.cat/v1/itransit/metro/estacions?estacions=${station_id}&app_id=${app_id}&app_key=${app_key}`);
       const data = await response.json();
-      console.log(data);
-      if (data.lines && data.lines.length > 0) {
-        const lineInfo = data.lines[0]; // tomamos la primera
-        textContainer.textContent = `[${id}] ${lineInfo.nom_linea} - ${lineInfo.nom_familia}`;
+      console.log(JSON.stringify(data, null, 2));
+      console.log("TS", data.linies);
+      // Custom pretty print
+      let output = "";
+      if (data.linies && data.linies.length > 0) {
+        const linia = data.linies[0];
+        output += `Linea: ${linia.nom_linia}<br>`;
+        if (linia.estacions && linia.estacions.length > 0) {
+          linia.estacions.forEach(est => {
+            if (est.linies_trajectes && est.linies_trajectes.length > 0 && est.id_sentit == 1) {
+              est.linies_trajectes.forEach(traj => {
+                if (traj.propers_trens && traj.propers_trens.length > 0) {
+                  const firstTrain = traj.propers_trens[0];
+                  output += `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Próxima llegada: ${new Date(firstTrain.temps_arribada).toLocaleTimeString()}<br>`;
+                } else {
+                  output += `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Próxima llegada: No disponible<br>`;
+                }
+              });
+            }
+          });
+        }
+        console.log("OUTPUT",output);
+        textContainer.innerHTML = output;
       } else {
-        textContainer.textContent = `[${id}] Sin información`;
+        textContainer.innerHTML = `[${station_name}] Sin información`;
       }
     } catch (err) {
       textContainer.textContent = "Error al obtener datos.";
