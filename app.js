@@ -8,6 +8,7 @@ const app_key = '841c8ca5a916a874dd9709d32b73ce88';
 // Colores de los botones principales
 const colors = ["#e74c3c", "#e74c3c", "#8e44ad", "#8e44ad", "#27ae60", "#27ae60", "#f39c12", "#f39c12", "#2980b9", "#2980b9"];
 const lines = ["L1 - Fondo", "L1 - Hospital de Bellvitge", "L2 - Badalona Pompeu Fabra", "L2 - Paral·lel", "L3 - Trinitat Nova", "L3 - Zona Universitaria", "L4 - Trinitat Nova", "L4 - La Pau", "L5 - Vall d'Hebron", "L5 - Cornellà"];
+
 // sentit:
 // L1 - Fondo: 1
 // L1 - Hospital de Bellvitge: 2
@@ -111,7 +112,7 @@ function fetchText(line_number, sentit, station_name, station_code) {
           return;
         }
         output += `Linea: ${linia.nom_linia} <br>`;
-        output += `Estación: ${key} <br>`;
+        output += `Estación: ${station_name} <br>`;
         if (linia.estacions && linia.estacions.length > 0) {
           linia.estacions.forEach(est => {
             if (est.linies_trajectes && est.linies_trajectes.length > 0 && est.id_sentit == sentit) {
@@ -155,7 +156,7 @@ function fetchText(line_number, sentit, station_name, station_code) {
         textContainer.innerHTML = `[${station_name}] Sin información`;
       }
     } catch (err) {
-      textContainer.textContent = "Error al obtener datos.";
+      textContainer.textContent = `Error al obtener datos: ${err.message}`;
     }
   }
 
