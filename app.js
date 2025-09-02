@@ -20,114 +20,6 @@ const lines = ["L1 - Fondo", "L1 - Hospital de Bellvitge", "L2 - Badalona Pompeu
 // L5 - Vall d'Hebron: 1
 // L5 - Cornellà: 2
 
-const stops_l1 = [
-  "Hospital de Bellvitge",
-  "Bellvitge",
-  "Av. Carrilet",
-  "Rambla Just Oliveras",
-  "Can Serra",
-  "Florida",
-  "Torrassa",
-  "Santa Eulàlia",
-  "Mercat Nou",
-  "Plaça de Sants",
-  "Hostafrancs",
-  "Espanya",
-  "Rocafort",
-  "Urgell",
-  "Universitat",
-  "Catalunya",
-  "Urquinaona",
-  "Arc de Triomf",
-  "Marina",
-  "Glòries",
-  "Clot",
-  "Navas",
-  "La Sagrera",
-  "Fabra i Puig",
-  "Sant Andreu",
-  "Torras i Bages",
-  "Trinitat Vella",
-  "Baró de Viver",
-  "Santa Coloma",
-  "Fondo"
-];
-
-const stops_l2 = [
-  "Badalona Pompeu Fabra",
-  "Pep Ventura",
-  "Gorg",
-  "Sant Roc",
-  "Artigues | Sant Adrià",
-  "Verneda",
-  "La Pau",
-  "Sant Martí",
-  "Bac de Roda",
-  "Clot",
-  "Encants",
-  "Sagrada Família",
-  "Monumental",
-  "Tetuan",
-  "Passeig de Gràcia",
-  "Universitat",
-  "Sant Antoni",
-  "Paral·lel"
-]
-
-const stops_l3 = [
- "Trinitat Nova",
- "Roquetes",
- "Canyelles",
- "Valldaura",
- "Mundet",
- "Montbau",
- "Vall d'Hebron",
- "Cocheras de Sant Genís",
- "Penitents",
- "Vallcarca",
- "Lesseps",
- "Fontana",
- "Diagonal",
- "Passeig de Gràcia",
- "Catalunya",
- "Liceu",
- "Drassanes",
- "Paral·lel",
- "Poble Sec",
- "Espanya",
- "Tarragona",
- "Sants Estació",
- "Plaça del Centre",
- "Les Corts",
- "Maria Cristina",
- "Palau Reial",
- "Zona Universitaria"
-]
-
-const stops_l4 = [
-  "Trinitat Nova",
-  "Via Júlia",
-  "Llucmajor",
-  "Maragall",
-  "Guinardó | Hospital de Sant Pau",
-  "Alfons X",
-  "Joanic",
-  "Verdaguer",
-  "Girona",
-  "Passeig de Gràcia",
-  "Jaume I",
-  "Barceloneta",
-  "Ciutadella | Vila Olímpica",
-  "Bogatell",
-  "Llacuna",
-  "Poblenou",
-  "Selva de Mar",
-  "El Maresme | Fòrum",
-  "Besòs Mar",
-  "Besòs",
-  "La Pau"
-];
-
 // Parse stations.csv and build a mapping from name to id
 let stationNameToId = {};
 fetch('stations.csv')
@@ -136,7 +28,7 @@ fetch('stations.csv')
     text.split('\n').forEach(line => {
       const [id, name] = line.split(',');
       if (id && name) {
-        stationNameToId[name.trim().toLowerCase()] = id.trim();
+        stationNameToId[id.trim()] = name.trim().toLowerCase();
       }
     });
   });
@@ -157,34 +49,30 @@ function showSubButtons(label, id_sentit) {
   subButtons.innerHTML = '';
   mainButtons.classList.add('hidden');
   subButtons.classList.remove('hidden');
-  var stops;
   
-  if (label == "L1 - Fondo") {
-    stops = stops_l1
-  } else if (label == "L1 - Hospital de Bellvitge") {
-    stops = stops_l1.reverse()
-  } else if (label == "L2 - Paral·lel") {
-    stops = stops_l2
-  } else if (label == "L2 - Badalona Pompeu Fabra") {
-    stops = stops_l2.reverse()
-  } else if (label == "L3 - Zona Universitaria")  {
-    stops = stops_l3
-  } else if (label == "L3 - Trinitat Nova") {
-    stops = stops_l3.reverse()
-  } else if (label == "L4 - La Pau") {
-    stops = stops_l4
-  } else if (label == "L4 - Trinitat Nova") {
-    stops = stops_l4.reverse()
-  } else {
-    stops = ["Aun no definido"]
+  let stops = Object.keys(stationNameToId)
+    .filter(key => key.trim().charAt(0) === line[1]);
+
+  let stops_names = stops.map(key => stationNameToId[key]);
+
+  // Reverse stops for specific labels
+  if (
+    label === "L1 - Hospital de Bellvitge" ||
+    label === "L2 - Badalona Pompeu Fabra" ||
+    label === "L3 - Trinitat Nova" ||
+    label === "L4 - Trinitat Nova" ||
+    label === "L5 - Cornellà"
+  ) {
+    stops_names = stops_names.reverse();
+    stops = stops.reverse();
   }
 
-  for (let i = 0; i < stops.length; i++) {
-    let item = stops[i];
+  for (let i = 0; i < stops_names.length; i++) {
+    let station_name = stops_names[i];
     const btn = document.createElement('button');
-    btn.textContent = `${item}`;
+    btn.textContent = `${station_name}`;
     btn.style.backgroundColor = "#bdc3c7";
-    btn.addEventListener('click', () => fetchText(line, id_sentit, item)); // <-- pass id_sentit
+    btn.addEventListener('click', () => fetchText(line, id_sentit, station_name, stops[i])); // <-- pass id_sentit
     subButtons.appendChild(btn);
   }
 }
@@ -192,7 +80,7 @@ function showSubButtons(label, id_sentit) {
 // Función para consultar texto en la web
 let intervalId;
 let countdownIntervalId;
-function fetchText(line_number, sentit, station_name) {
+function fetchText(line_number, sentit, station_name, station_code) {
   console.log("In line number", line_number, "fetching", station_name, "with sentit", sentit);
   if (intervalId) clearInterval(intervalId);
   if (countdownIntervalId) clearInterval(countdownIntervalId);
@@ -201,13 +89,7 @@ function fetchText(line_number, sentit, station_name) {
 
   async function update() {
     try {
-      const key = station_name.trim().toLowerCase();
-      const station_id = stationNameToId[key];
-      if (!station_id) {
-        textContainer.textContent = `No se encontró el ID para la estación "${station_name}"`;
-        return;
-      }
-      const response = await fetch(`https://api.tmb.cat/v1/itransit/metro/estacions?estacions=${station_id}&app_id=${app_id}&app_key=${app_key}`);
+      const response = await fetch(`https://api.tmb.cat/v1/itransit/metro/estacions?estacions=${station_code}&app_id=${app_id}&app_key=${app_key}`);
       const data = await response.json();
       console.log(JSON.stringify(data, null, 2));
       if (data.timestamp) {

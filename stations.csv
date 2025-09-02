@@ -30,11 +30,13 @@
 140,Fondo
 210,Paral·lel
 211,Sant Antoni
+212,Universitat
 213,Passeig de Gràcia
 214,Tetuan
 215,Monumental
 216,Sagrada Família
 217,Encants
+218,Clot
 219,Bac de Roda
 220,Sant Martí
 221,La Pau
@@ -51,9 +53,13 @@
 318,Plaça del Centre
 319,Sants Estació
 320,Tarragona
+321,Espanya
 322,Poble Sec
+323,Paral·lel
 324,Drassanes
 325,Liceu
+326,Catalunya
+327,Passeig de Gràcia
 328,Diagonal
 329,Fontana
 330,Lesseps
@@ -76,6 +82,8 @@
 421,Ciutadella | Vila Olímpica
 422,Barceloneta
 423,Jaume I
+424,Urquinaona
+425,Passeig de Gràcia
 426,Girona
 427,Verdaguer
 428,Joanic
@@ -84,25 +92,34 @@
 431,Maragall
 432,Llucmajor
 433,Via Júlia
+434,Trinitat Nova
 509,Cornellà Centre
 510,Gavarra
 511,Sant Ildefons
 512,Can Boixeres
 513,Can Vidalet
 514,Pubilla Cases
+555,Ernest Lluch
 515,Collblanc
 516,Badal
+517,Plaça de Sants
+518,Sants Estació
 519,Entença
 520,Hospital Clínic
+521,Diagonal
+522,Verdaguer
+523,Sagrada Família
 524,Sant Pau | Dos de Maig
 525,Camp de l'Arpa
+526,La Sagrera
 527,Congrés
+528,Maragall
 529,Virrei Amat
 530,Vilapicina
 531,Horta
 532,El Carmel
 533,El Coll | La Teixonera
-555,Ernest Lluch
+534,Vall d'Hebron
 901,Aeroport T1
 903,Aeroport T2
 904,Mas Blau
@@ -132,8 +149,3 @@
 957,Foneria
 958,Ciutat de la Justícia
 959,Provençana
-1137,Casa de l'Aigua
-1138,Torre Baró | Vallbona
-1139,Ciutat Meridiana
-1140,Can Cuiàs
-9902,Parc de Montjuïc
