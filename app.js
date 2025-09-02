@@ -28,7 +28,7 @@ fetch('stations.csv')
     text.split('\n').forEach(line => {
       const [id, name] = line.split(',');
       if (id && name) {
-        stationNameToId[id.trim()] = name.trim().toLowerCase();
+        stationNameToId[id.trim()] = name.trim();
       }
     });
   });
