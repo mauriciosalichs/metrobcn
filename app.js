@@ -12,7 +12,7 @@ const lines = ["L1 - Fondo", "L1 - Hospital de Bellvitge", "L2 - Badalona Pompeu
 // L1 - Fondo: 1
 // L1 - Hospital de Bellvitge: 2
 // L2 - Badalona: 1
-// L2 - Poble Sec: 2
+// L2 - Paral·lel: 2
 // L3 - Trinitat Nova: 1
 // L3 - Zona Universitaria: 2
 // L4 - Trinitat Nova: 1
@@ -58,9 +58,9 @@ function showSubButtons(label, id_sentit) {
   // Reverse stops for specific labels
   if (
     label === "L1 - Hospital de Bellvitge" ||
-    label === "L2 - Badalona Pompeu Fabra" ||
-    label === "L3 - Trinitat Nova" ||
-    label === "L4 - Trinitat Nova" ||
+    label === "L2 - Paral·lel" ||
+    label === "L3 - Zona Universitaria" ||
+    label === "L4 - La Pau" ||
     label === "L5 - Cornellà"
   ) {
     stops_names = stops_names.reverse();
