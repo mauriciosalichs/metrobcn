@@ -121,13 +121,16 @@ function fetchText(line_number, sentit, station_name) {
       if (data.linies && data.linies.length > 0) {
         const linia = data.linies[0];
         output += `Linea: ${linia.nom_linia} <br>`;
+  
         if (linia.estacions && linia.estacions.length > 0) {
           linia.estacions.forEach(est => {
             if (est.linies_trajectes && est.linies_trajectes.length > 0 && est.id_sentit == sentit) {
               est.linies_trajectes.forEach(traj => {
+                output += `Sentido: ${traj.desti_trajecte} <br>`;
                 if (traj.propers_trens && traj.propers_trens.length > 0) {
                   const firstTrain = traj.propers_trens[0];
-                  output += `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Próxima llegada: ${new Date(firstTrain.temps_arribada).toLocaleTimeString()}<br>`;
+                  output += `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Próxima llegada:<br>`;
+                  output += `<span style="color:red;font-size:2em;">${new Date(firstTrain.temps_arribada).toLocaleTimeString()}</span><br>`;
                 } else {
                   output += `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Próxima llegada: No disponible<br>`;
                 }
