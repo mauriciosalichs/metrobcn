@@ -2,8 +2,11 @@ const mainButtons = document.getElementById('main-buttons');
 const subButtons = document.getElementById('sub-buttons');
 const textContainer = document.getElementById('text-container');
 
+const app_id = '8eeb4f36';
+const app_key = '841c8ca5a916a874dd9709d32b73ce88';
+
 // Colores de los botones principales
-const colors = ["#e74c3c", "#e74c3c", "#8e44ad", "#8e44ad", "#27ae60", "#27ae60", "#f39c12", "#f39c12", "#2980b9", ];
+const colors = ["#e74c3c", "#e74c3c", "#8e44ad", "#8e44ad", "#27ae60", "#27ae60", "#f39c12", "#f39c12", "#2980b9", "#2980b9"];
 const lines = ["L1 - Fondo", "L1 - Hospital de Bellvitge", "L2 - Badalona", "L2 - Poble Sec", "L3 - Trinitat Nova", "L3 - Zona Universitaria", "L4 - La Pau", "L4 - Trinitat Nova", "L5 - Vall d'Hebron", "L5 - Cornellà"];
 
 const stops_l3 = [
@@ -73,13 +76,20 @@ function showSubButtons(label) {
 // Función para consultar texto en la web
 let intervalId;
 function fetchText(id) {
-  if (intervalId) clearInterval(intervalId);
 
+  if (intervalId) clearInterval(intervalId);
+  subButtons.classList.add('hidden');
   async function update() {
     try {
-      const response = await fetch(`https://baconipsum.com/api/?type=meat-and-filler&paras=1`);
+      const response = await fetch(`https://api.tmb.cat/v1/itransit/metro/estacions?estacions=120&app_id=${app_id}&app_key=${app_key}`);
       const data = await response.json();
-      textContainer.textContent = `[${id}] ${data[0]}`;
+      console.log(data);
+      if (data.lines && data.lines.length > 0) {
+        const lineInfo = data.lines[0]; // tomamos la primera
+        textContainer.textContent = `[${id}] ${lineInfo.nom_linea} - ${lineInfo.nom_familia}`;
+      } else {
+        textContainer.textContent = `[${id}] Sin información`;
+      }
     } catch (err) {
       textContainer.textContent = "Error al obtener datos.";
     }
