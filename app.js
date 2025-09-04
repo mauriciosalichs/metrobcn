@@ -1,3 +1,22 @@
+document.body.insertAdjacentHTML('afterbegin', `
+  <div id="metro-title-bar" style="
+    width: 100vw;
+    background: #000;
+    color: #fff;
+    font-size: 1em;
+    font-family: sans-serif;
+    text-align: center;
+    padding: 0.5em 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+  ">
+    Next Metro Barcelona
+  </div>
+`);
+document.body.style.paddingTop = '2em'; // Prevent content under the title
+
 const mainButtons = document.getElementById('main-buttons');
 const subButtons = document.getElementById('sub-buttons');
 const textContainer = document.getElementById('text-container');
@@ -34,13 +53,44 @@ fetch('stations.csv')
     });
   });
 
+// State management
+function setState(state, data = {}) {
+  window.history.pushState({ state, ...data }, '', '');
+  renderState(state, data);
+}
+
+function renderState(state, data = {}) {
+  if (state === "lines") {
+    mainButtons.classList.remove('hidden');
+    subButtons.classList.add('hidden');
+    textContainer.innerHTML = '';
+  } else if (state === "stations") {
+    mainButtons.classList.add('hidden');
+    subButtons.classList.remove('hidden');
+    textContainer.innerHTML = '';
+  } else if (state === "time") {
+    mainButtons.classList.add('hidden');
+    subButtons.classList.add('hidden');
+    // textContainer is updated by fetchText
+  }
+}
+
+// Listen for browser navigation
+window.addEventListener('popstate', (event) => {
+  const state = event.state ? event.state.state : "lines";
+  renderState(state, event.state || {});
+});
+
 // Crear botones principales
 lines.forEach((label, index) => {
   const btn = document.createElement('button');
   btn.textContent = label;
   btn.style.backgroundColor = colors[index];
-  let id_sentit = (index % 2) + 1; // <-- assign id_sentit as requested
-  btn.addEventListener('click', () => showSubButtons(label, id_sentit));
+  let id_sentit = (index % 2) + 1;
+  btn.addEventListener('click', () => {
+    setState("stations", { label, id_sentit });
+    showSubButtons(label, id_sentit);
+  });
   mainButtons.appendChild(btn);
 });
 
@@ -73,7 +123,10 @@ function showSubButtons(label, id_sentit) {
     const btn = document.createElement('button');
     btn.textContent = `${station_name}`;
     btn.style.backgroundColor = "#bdc3c7";
-    btn.addEventListener('click', () => fetchText(line, id_sentit, station_name, stops[i])); // <-- pass id_sentit
+    btn.addEventListener('click', () => {
+      setState("time", { line, id_sentit, station_name, station_code: stops[i] });
+      fetchText(line, id_sentit, station_name, stops[i]);
+    });
     subButtons.appendChild(btn);
   }
 }
@@ -124,14 +177,18 @@ function fetchText(line_number, sentit, station_name, station_code) {
                       const seconds = Math.round((train.temps_arribada - now.getTime()) / 1000);
                       secondsArrivals[idx] = seconds;
                       let proxima_llegada_label;
-                      if (idx == 0) proxima_llegada_label = "Próxima llegada: ";
-                      if (idx == 1) proxima_llegada_label = "Siguiente llegada: ";
+                      if (idx == 0) proxima_llegada_label = "Próxima partida: ";
+                      if (idx == 1) proxima_llegada_label = "Siguiente partida: ";
                       output += `${proxima_llegada_label}<br>${new Date(train.temps_arribada).toLocaleTimeString()}<br>`;
-                      output += `<div id="secondsToArrival${idx + 1}" style="color:red;font-size:${7 - (idx*3)}em;margin-top:10px;">${seconds}</div>`;
+                      // Format seconds as m:ss
+                      const min = Math.floor(seconds / 60);
+                      const sec = Math.abs(seconds % 60);
+                      const formatted = `${min}:${sec.toString().padStart(2, '0')}`;
+                      output += `<div id="secondsToArrival${idx + 1}" style="color:red;font-size:${7 - (idx*3)}em;margin-top:10px;">${formatted}</div>`;
                     }
                   });
                 } else {
-                  output += `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Próxima llegada: No disponible<br>`;
+                  output += `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Próxima partida: No disponible<br>`;
                 }
               });
             }
@@ -145,9 +202,16 @@ function fetchText(line_number, sentit, station_name, station_code) {
           secondsArrivals.forEach((sec, idx) => {
             const el = document.getElementById(`secondsToArrival${idx + 1}`);
             if (el) {
-              let current = parseInt(el.textContent, 10);
-              if (current > 0) {
-                el.textContent = current - 1;
+              let currentText = el.textContent;
+              let parts = currentText.split(':');
+              let min = parseInt(parts[0], 10);
+              let sec = parseInt(parts[1], 10);
+              let total = min * 60 + sec;
+              if (total > 0) {
+                total = total - 1;
+                let newMin = Math.floor(total / 60);
+                let newSec = Math.abs(total % 60);
+                el.textContent = `${newMin}:${newSec.toString().padStart(2, '0')}`;
               }
             }
           });
@@ -163,3 +227,8 @@ function fetchText(line_number, sentit, station_name, station_code) {
   update(); // primer fetch inmediato
   intervalId = setInterval(update, 10000); // actualiza todo cada 10 segundos
 }
+
+// Initial state
+window.addEventListener('DOMContentLoaded', () => {
+  setState("lines");
+});
