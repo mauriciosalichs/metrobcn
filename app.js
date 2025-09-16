@@ -17,12 +17,16 @@ document.body.insertAdjacentHTML('afterbegin', `
 `);
 document.body.style.paddingTop = '2em'; // Prevent content under the title
 
-const mainButtons = document.getElementById('main-buttons');
-const subButtons = document.getElementById('sub-buttons');
-const textContainer = document.getElementById('text-container');
+const linesButtons = document.getElementById('lines-buttons');
+const stationsButtons = document.getElementById('stations-buttons');
+const remainingTimeScreen = document.getElementById('remaining-time-screen');
+const showExitsScreen = document.getElementById('show-exits-screen');
 
 const app_id = '8eeb4f36';
 const app_key = '841c8ca5a916a874dd9709d32b73ce88';
+
+const app_id_bp = 'bb12834e';
+const app_key_bp = '294f3621679783463ddb04964c7a0160';
 
 // Colores de los botones principales
 const colors = ["#e74c3c", "#e74c3c", "#8e44ad", "#8e44ad", "#27ae60", "#27ae60", "#f39c12", "#f39c12", "#2980b9", "#2980b9"];
@@ -59,20 +63,47 @@ function setState(state, data = {}) {
   renderState(state, data);
 }
 
+function getState() {
+  console.log("Current history state:", window.history.state);
+  return window.history.state.state;
+}
+
 function renderState(state, data = {}) {
-  if (state === "lines") {
-    mainButtons.classList.remove('hidden');
-    subButtons.classList.add('hidden');
-    textContainer.innerHTML = '';
-  } else if (state === "stations") {
-    mainButtons.classList.add('hidden');
-    subButtons.classList.remove('hidden');
-    textContainer.innerHTML = '';
-  } else if (state === "time") {
-    mainButtons.classList.add('hidden');
-    subButtons.classList.add('hidden');
-    // textContainer is updated by fetchText
+  if (state !== "time") {
+    if (intervalId) clearInterval(intervalId);
+    if (countdownIntervalId) clearInterval(countdownIntervalId);
   }
+  if (state === "lines") {
+    linesButtons.classList.remove('hidden');
+    stationsButtons.classList.add('hidden');
+    remainingTimeScreen.innerHTML = '';
+    showExitsScreen.innerHTML = '';
+  } else if (state === "stations") {
+    linesButtons.classList.add('hidden');
+    stationsButtons.classList.remove('hidden');
+    remainingTimeScreen.innerHTML = '';
+    showExitsScreen.innerHTML = '';
+  } else if (state === "time") {
+    linesButtons.classList.add('hidden');
+    stationsButtons.classList.add('hidden');
+    // remainingTimeScreen is updated by fetchTime
+    showExitsScreen.innerHTML = '';
+  } else if (state === "after-stations") {
+    linesButtons.classList.add('hidden');
+    stationsButtons.classList.remove('hidden');
+    remainingTimeScreen.innerHTML = '';
+    showExitsScreen.innerHTML = '';
+    // Mostrar solo estaciones desde station_index en adelante
+    if (data.label && data.id_sentit !== undefined && data.station_index !== undefined) {
+      showstationsButtons(data.label, data.id_sentit, data.station_index + 1);
+    }
+  } else if (state === "exits") {
+    linesButtons.classList.add('hidden');
+    stationsButtons.classList.add('hidden');
+    remainingTimeScreen.innerHTML = '';
+    // showExitsScreen is updated by fetchExits
+  }
+
 }
 
 // Listen for browser navigation
@@ -89,17 +120,18 @@ lines.forEach((label, index) => {
   let id_sentit = (index % 2) + 1;
   btn.addEventListener('click', () => {
     setState("stations", { label, id_sentit });
-    showSubButtons(label, id_sentit);
+    showstationsButtons(label, id_sentit);
   });
-  mainButtons.appendChild(btn);
+  linesButtons.appendChild(btn);
 });
 
 // Mostrar subset de 10 botones
-function showSubButtons(label, id_sentit) {
+function showstationsButtons(label, id_sentit, startIndex = 0) {
+  console.log("Showing stations for", label, "with sentit", id_sentit, "starting from index", startIndex);
   let line = label.split(" - ")[0];
-  subButtons.innerHTML = '';
-  mainButtons.classList.add('hidden');
-  subButtons.classList.remove('hidden');
+  stationsButtons.innerHTML = '';
+  linesButtons.classList.add('hidden');
+  stationsButtons.classList.remove('hidden');
   
   let stops = Object.keys(stationNameToId)
     .filter(key => key.trim().charAt(0) === line[1]);
@@ -107,16 +139,14 @@ function showSubButtons(label, id_sentit) {
   let stops_names = stops.map(key => stationNameToId[key]);
 
   // Reverse stops for specific labels
-  if (
-    label === "L1 - Hospital de Bellvitge" ||
-    label === "L2 - Paral·lel" ||
-    label === "L3 - Zona Universitaria" ||
-    label === "L4 - La Pau" ||
-    label === "L5 - Cornellà"
-  ) {
+  if (id_sentit === 2) {
     stops_names = stops_names.reverse();
     stops = stops.reverse();
   }
+
+  // Recortar las listas si es necesario
+  stops_names = stops_names.slice(startIndex);
+  stops = stops.slice(startIndex);
 
   for (let i = 0; i < stops_names.length; i++) {
     let station_name = stops_names[i];
@@ -124,21 +154,29 @@ function showSubButtons(label, id_sentit) {
     btn.textContent = `${station_name}`;
     btn.style.backgroundColor = "#bdc3c7";
     btn.addEventListener('click', () => {
-      setState("time", { line, id_sentit, station_name, station_code: stops[i] });
-      fetchText(line, id_sentit, station_name, stops[i]);
+      // Al hacer clic en una estación, ir a la pantalla de tiempo si el estado es "stations"
+      // O ir a la pantalla de salidas si el estado es "after-stations"
+      if (getState() === "stations") {
+        setState("time", { line, id_sentit, station_name, station_code: stops[i], station_index: i + startIndex });
+        fetchTime(line, id_sentit, station_name, stops[i], i + startIndex);
+      } else if (getState() === "after-stations") {
+        setState("exits", { line, id_sentit, station_name, station_code: stops[i], station_index: i + startIndex });
+        fetchExits(line, id_sentit, station_name, stops[i]);
+      }
     });
-    subButtons.appendChild(btn);
+    stationsButtons.appendChild(btn);
   }
 }
 
 // Función para consultar texto en la web
 let intervalId;
 let countdownIntervalId;
-function fetchText(line_number, sentit, station_name, station_code) {
+function fetchTime(line_number, sentit, station_name, station_code, station_index) {
   console.log("In line number", line_number, "fetching", station_name, "with sentit", sentit);
   if (intervalId) clearInterval(intervalId);
   if (countdownIntervalId) clearInterval(countdownIntervalId);
-  subButtons.classList.add('hidden');
+  linesButtons.classList.add('hidden');
+  stationsButtons.classList.add('hidden');
   let secondsArrivals = [];
 
   async function update() {
@@ -151,7 +189,7 @@ function fetchText(line_number, sentit, station_name, station_code) {
         console.log("Timestamp:", now.toLocaleString());
       } else {
         console.log("No timestamp available");
-        textContainer.innerHTML = "<p>No se encontró información de tiempo.</p>";
+        remainingTimeScreen.innerHTML = "<p>No se encontró información de tiempo.</p>";
         return;
       }
       // Custom pretty print
@@ -194,7 +232,26 @@ function fetchText(line_number, sentit, station_name, station_code) {
             }
           });
         }
-        textContainer.innerHTML = output;
+        remainingTimeScreen.innerHTML = output;
+
+        // Agregar botón Seleccionar destino
+        const selectBtn = document.createElement('button');
+        selectBtn.textContent = "Seleccionar destino";
+        selectBtn.style.position = "fixed";
+        selectBtn.style.left = "50%";
+        selectBtn.style.bottom = "30px";
+        selectBtn.style.transform = "translateX(-50%)";
+        selectBtn.style.background = "#2980b9";
+        selectBtn.style.color = "#fff";
+        selectBtn.style.fontSize = "1.2em";
+        selectBtn.style.padding = "0.7em 2em";
+        selectBtn.style.border = "none";
+        selectBtn.style.borderRadius = "8px";
+        selectBtn.style.zIndex = "1100";
+        selectBtn.addEventListener('click', () => {
+          setState("after-stations", { label: `${line_number} - ${station_name}`, id_sentit: sentit, station_index });
+        });
+        remainingTimeScreen.appendChild(selectBtn);
 
         // Decrement both seconds counters every second
         if (countdownIntervalId) clearInterval(countdownIntervalId);
@@ -217,15 +274,127 @@ function fetchText(line_number, sentit, station_name, station_code) {
           });
         }, 1000);
       } else {
-        textContainer.innerHTML = `[${station_name}] Sin información`;
+        remainingTimeScreen.innerHTML = `[${station_name}] Sin información`;
       }
     } catch (err) {
-      textContainer.textContent = `Error al obtener datos: ${err.message}`;
+      remainingTimeScreen.textContent = `Error al obtener datos: ${err.message}`;
     }
   }
 
   update(); // primer fetch inmediato
   intervalId = setInterval(update, 10000); // actualiza todo cada 10 segundos
+}
+
+// Función para consultar salidas en la web
+// Manejo de exits.json persistente
+function loadExitsJson() {
+  let exits = localStorage.getItem('exitsJson');
+  if (exits) {
+    return JSON.parse(exits);
+  } else {
+    // Si no existe, cargar archivo y guardar en localStorage
+    fetch('exits.json')
+      .then(response => response.text())
+      .then(text => {
+        localStorage.setItem('exitsJson', text);
+      });
+    return {};
+  }
+}
+
+function saveExitsJson(exitsObj) {
+  localStorage.setItem('exitsJson', JSON.stringify(exitsObj));
+}
+
+function fetchExits(line_number, sentit, station_name, station_code) {
+  console.log("In line number", line_number, "fetching exits for", station_name, "with sentit", sentit, "and station code", station_code);
+  let exitsObj = loadExitsJson();
+  let stationRecord = exitsObj[station_code];
+  let exitsList = [];
+  if (stationRecord && stationRecord.exits && stationRecord.exits.length > 0) {
+    // sentido: 1 o 2, pero array index 0 o 1
+    exitsList = stationRecord.exits[sentit - 1] || {};
+  }
+  // Construir tabla HTML con celdas editables
+  let table = '<table style="width:100%;border-collapse:collapse;">';
+  table += '<tr><th>Vagón</th><th>Salidas</th></tr>';
+  for (let i = 1; i <= 20; i++) {
+    let salida = exitsList[i] ? exitsList[i].join(', ') : '';
+    table += `<tr><td style='border:1px solid #ccc;text-align:center;'>${i}</td><td style='border:1px solid #ccc;cursor:pointer;' data-vagon='${i}'>${salida}</td></tr>`;
+  }
+  table += '</table>';
+  showExitsScreen.innerHTML = `<h2>Salidas para estación ${station_name} (${station_code}) sentido ${sentit}</h2>` + table;
+
+  // Agregar evento click a cada celda de salida
+  Array.from(showExitsScreen.querySelectorAll('td[data-vagon]')).forEach(cell => {
+    cell.addEventListener('click', function() {
+      const vagon = parseInt(cell.getAttribute('data-vagon'));
+      // Crear popup
+      let popup = document.createElement('div');
+      popup.style.position = 'fixed';
+      popup.style.left = '50%';
+      popup.style.top = '50%';
+      popup.style.transform = 'translate(-50%, -50%)';
+      popup.style.background = '#fff';
+      popup.style.border = '2px solid #2980b9';
+      popup.style.borderRadius = '10px';
+      popup.style.padding = '2em';
+      popup.style.zIndex = '9999';
+      popup.innerHTML = `<h3>Editar salidas para vagón ${vagon}</h3>`;
+      // Inputs
+      let inputs = [];
+      for (let j = 0; j < 4; j++) {
+        let value = exitsList[vagon] && exitsList[vagon][j] ? exitsList[vagon][j] : '';
+        let input = document.createElement('input');
+        input.type = 'text';
+        input.value = value;
+        input.placeholder = `Salida ${j+1}`;
+        input.style.display = 'block';
+        input.style.marginBottom = '1em';
+        popup.appendChild(input);
+        inputs.push(input);
+      }
+      // Botón aceptar
+      let acceptBtn = document.createElement('button');
+      acceptBtn.textContent = 'Aceptar';
+      acceptBtn.style.background = '#2980b9';
+      acceptBtn.style.color = '#fff';
+      acceptBtn.style.padding = '0.5em 2em';
+      acceptBtn.style.border = 'none';
+      acceptBtn.style.borderRadius = '8px';
+      acceptBtn.style.marginRight = '1em';
+      popup.appendChild(acceptBtn);
+      // Botón cancelar
+      let cancelBtn = document.createElement('button');
+      cancelBtn.textContent = 'Cancelar';
+      cancelBtn.style.background = '#ccc';
+      cancelBtn.style.color = '#333';
+      cancelBtn.style.padding = '0.5em 2em';
+      cancelBtn.style.border = 'none';
+      cancelBtn.style.borderRadius = '8px';
+      popup.appendChild(cancelBtn);
+      document.body.appendChild(popup);
+
+      acceptBtn.onclick = function() {
+        // Guardar valores en exitsObj
+        let newValues = inputs.map(inp => inp.value.trim()).filter(v => v);
+        if (!exitsObj[station_code]) {
+          exitsObj[station_code] = { exits: [{}, {}] };
+        }
+        if (!exitsObj[station_code].exits[sentit-1]) {
+          exitsObj[station_code].exits[sentit-1] = {};
+        }
+        exitsObj[station_code].exits[sentit-1][vagon] = newValues;
+        saveExitsJson(exitsObj);
+        document.body.removeChild(popup);
+        // Refrescar tabla
+        fetchExits(line_number, sentit, station_name, station_code);
+      };
+      cancelBtn.onclick = function() {
+        document.body.removeChild(popup);
+      };
+    });
+  });
 }
 
 // Initial state
