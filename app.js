@@ -147,7 +147,45 @@ lines.forEach((label, index) => {
   linesButtons.appendChild(btn);
 });
 
-// Mostrar subset de 10 botones
+// Add three extra buttons with images in a row at the end
+const extraRow = document.createElement('div');
+extraRow.style.display = 'flex';
+extraRow.style.width = '100%';
+extraRow.style.marginTop = '1em';
+
+const extraScreens = [
+  { id: 'infoScreen', img: "imgs/info.png" },
+  { id: 'favScreen', img: "imgs/favs.png" },
+  { id: 'settingsScreen', img: "imgs/settings.png" }
+];
+
+extraScreens.forEach(({ id, img }) => {
+  const btn = document.createElement('button');
+  btn.style.flex = '1';
+  btn.style.height = '30px';
+  btn.style.display = 'flex';
+  btn.style.alignItems = 'center';
+  btn.style.justifyContent = 'center';
+  btn.style.background = '#575454d0';
+  btn.style.border = '1px solid #030303ff';
+  btn.innerHTML = `<img src='${img}' style='width:25px;height:25px;display:block;margin:auto;' alt='${id}'/>`;
+  btn.onclick = () => {
+    showScreen(id);
+  };
+  extraRow.appendChild(btn);
+});
+linesButtons.appendChild(extraRow);
+
+function showScreen(id) {
+  if (id === 'infoScreen') {
+    alert("Next Metro Barcelona\nVersión 1.0\nDesarrollado por msalichs");
+  } else if (id === 'favScreen') {
+    alert("Funcionalidad de favoritos no implementada aún.");
+  } else if (id === 'settingsScreen') {
+    alert("Funcionalidad de ajustes no implementada aún.");
+  }
+}
+
 function showstationsButtons(label, id_sentit, startIndex = 0) {
   console.log("Showing stations for", label, "with sentit", id_sentit, "starting from index", startIndex);
   let line = label.split(" - ")[0];
