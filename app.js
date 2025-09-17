@@ -23,6 +23,11 @@ const remainingTimeScreen = document.getElementById('remaining-time-screen');
 const exitsScreen = document.getElementById('exits-screen');
 const exitsEditScreen = document.getElementById('exits-edit-screen');
 
+// Declarar localStorage y darle un valor inicial vacío si no existe
+if (!localStorage.getItem('exitsJson')) {
+  localStorage.setItem('exitsJson', JSON.stringify({}));
+}
+
 let app_id, app_key, app_id_bp, app_key_bp, exits_worker_url;
 fetch('json/config.json')
   .then(response => response.json())
@@ -305,8 +310,22 @@ async function loadExitsJson() {
   console.log("Loading exits JSON from remote");
   try {
   let res = await fetch(exits_worker_url);
+  // Si falla en obtenerlo, lo recupera del localStorage
+  if (!res.ok) {
+    console.warn("Failed to fetch exits JSON, falling back to localStorage");
+    let localCopy = localStorage.getItem('exitsJson');
+    if (localCopy) {
+      try {
+        return JSON.parse(localCopy);
+      } catch (e) {
+        console.error("Error parsing localStorage exits JSON:", e);
+      }
+    }
+    return {};
+  }
   console.log("Fetched exits JSON:", res);
     let data = await res.json();
+    localStorage.setItem('exitsJson', JSON.stringify(data));
     console.log("Exits JSON data:", data);
     return data;
   } catch (e) {
