@@ -440,10 +440,16 @@ function fetchExitsView(line_number, sentit, station_name, station_code) {
   // Insertar saltos con '...' si hay huecos entre vagones
   let fullRows = [];
   for (let idx = 0; idx < rows.length; idx++) {
-    fullRows.push(rows[idx]);
-    if (idx < rows.length - 1 && rows[idx + 1] - rows[idx] > 1) {
-      // Insertar '...' equidistante
-      fullRows.push('gap');
+    if (idx === 0) {
+      fullRows.push("Frente");
+    } else if (idx === rows.length - 1) {
+      fullRows.push("Cola");
+    } else {
+      fullRows.push(rows[idx]);
+      if (idx < rows.length - 1 && rows[idx + 1] - rows[idx] > 1) {
+        // Insertar '...' equidistante
+        fullRows.push('gap');
+      }
     }
   }
 
@@ -462,7 +468,16 @@ function fetchExitsView(line_number, sentit, station_name, station_code) {
     // Tags para salidas
     let salidaTags = '';
     if (exitsList[i] && exitsList[i].length > 0) {
-      salidaTags = exitsList[i].map(txt => `<span style='display:inline-block;background:#eee;color:#333;border-radius:8px;padding:0.3em 1em;margin:0.2em;font-size:1.1em;'>${txt}</span>`).join('');
+      salidaTags = exitsList[i].map(txt => {
+        // if txt is L1, color red; L2 purple; L3 green; L4 orange; L5 blue; else gray
+        let colorTag = '#7f8c8d'; // default gray
+        if (txt === 'L1') colorTag = '#e74c3c';
+        else if (txt === 'L2') colorTag = '#8e44ad';
+        else if (txt === 'L3') colorTag = '#27ae60';
+        else if (txt === 'L4') colorTag = '#f39c12';
+        else if (txt === 'L5') colorTag = '#2980b9';
+        return `<span style='display:inline-block;background:${colorTag};color:#fff;border-radius:8px;padding:0.3em 1em;margin:0.2em;font-size:1.1em;'>${txt}</span>`;
+      }).join('');
     }
     table += `<tr style='border:none;'>`
       + `<td style='border:none;text-align:center;'>${vagonCell}</td>`
