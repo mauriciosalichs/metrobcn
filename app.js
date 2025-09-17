@@ -495,29 +495,55 @@ async function fetchExitsEdit(line_number, sentit, station_name, station_code) {
         popup.appendChild(input);
         inputs.push(input);
       }
-      // Botón aceptar
+      // Botón modifcar una direccion
+      let accept1Btn = document.createElement('button');
+      accept1Btn.textContent = 'Modificar';
+      accept1Btn.style.background = '#2980b9';
+      accept1Btn.style.fontSize = '1em';
+      accept1Btn.style.color = '#fff';
+      accept1Btn.style.padding = '0.5em 2em';
+      accept1Btn.style.border = 'none';
+      accept1Btn.style.borderRadius = '8px';
+      accept1Btn.style.marginRight = '1em';
+      popup.appendChild(accept1Btn);
+
+      // Botón modificar ambas direcciones
       let acceptBtn = document.createElement('button');
-      acceptBtn.textContent = 'Aceptar';
+      acceptBtn.textContent = 'Modificar en ambas direcciones';
       acceptBtn.style.background = '#2980b9';
+      acceptBtn.style.fontSize = '1em';
       acceptBtn.style.color = '#fff';
       acceptBtn.style.padding = '0.5em 2em';
       acceptBtn.style.border = 'none';
       acceptBtn.style.borderRadius = '8px';
       acceptBtn.style.marginRight = '1em';
       popup.appendChild(acceptBtn);
+
       // Botón limpiar
       let clearBtn = document.createElement('button');
       clearBtn.textContent = 'Limpiar valores';
+      clearBtn.style.fontSize = '1em';
       clearBtn.style.background = '#ccc';
       clearBtn.style.color = '#333';
       clearBtn.style.padding = '0.5em 2em';
       clearBtn.style.border = 'none';
       clearBtn.style.borderRadius = '8px';
       popup.appendChild(clearBtn);
+
+      // Botón cancelar
+      let cancelBtn = document.createElement('button');
+      cancelBtn.textContent = 'Cancelar';
+      cancelBtn.style.fontSize = '1em';
+      cancelBtn.style.background = '#e74c3c';
+      cancelBtn.style.color = '#fff';
+      cancelBtn.style.padding = '0.5em 2em';
+      cancelBtn.style.border = 'none';
+      cancelBtn.style.borderRadius = '8px';
+      popup.appendChild(cancelBtn);
+
       document.body.appendChild(popup);
 
-      acceptBtn.onclick = function() {
-        // Guardar valores en exitsObj
+      function saveChanges(applyToBoth) {
         let newValues = inputs.map(inp => inp.value.trim()).filter(v => v);
         if (!exitsObj[station_code]) {
           exitsObj[station_code] = { exits: [{}, {}] };
@@ -526,10 +552,7 @@ async function fetchExitsEdit(line_number, sentit, station_name, station_code) {
           exitsObj[station_code].exits[sentit-1] = {};
         }
         exitsObj[station_code].exits[sentit-1][vagon] = newValues;
-        // Si se guarda el valor en [estacion][sent][vagon],
-        // se debe guardar también en [estacion][1-sent][20-vagon] si no existe
-        // (Siempre y cuando no se haya hecho un clear antes)
-        if (!clearBtnPressed) {
+        if (applyToBoth && !clearBtnPressed) {
           if (!exitsObj[station_code].exits[2-sentit]) {
             exitsObj[station_code].exits[2-sentit] = {};
           }
@@ -540,10 +563,24 @@ async function fetchExitsEdit(line_number, sentit, station_name, station_code) {
         clearBtnPressed = false;
         // Refrescar tabla
         setState('exits-edit', { line: line_number, id_sentit: sentit, station_name, station_code });
+      }
+
+      accept1Btn.onclick = function() {
+        saveChanges(false);
       };
+
+      acceptBtn.onclick = function() {
+        saveChanges(true);
+      };
+
       clearBtn.onclick = function() {
         inputs.forEach(inp => inp.value = '');
         clearBtnPressed = true;
+      };
+
+      cancelBtn.onclick = function() {
+        document.body.removeChild(popup);
+        clearBtnPressed = false;
       };
     });
   });
