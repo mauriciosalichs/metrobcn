@@ -23,11 +23,16 @@ const remainingTimeScreen = document.getElementById('remaining-time-screen');
 const exitsScreen = document.getElementById('exits-screen');
 const exitsEditScreen = document.getElementById('exits-edit-screen');
 
-const app_id = '8eeb4f36';
-const app_key = '841c8ca5a916a874dd9709d32b73ce88';
-
-const app_id_bp = 'bb12834e';
-const app_key_bp = '294f3621679783463ddb04964c7a0160';
+let app_id, app_key, app_id_bp, app_key_bp, exits_worker_url;
+fetch('json/config.json')
+  .then(response => response.json())
+  .then(cfg => {
+    app_id = cfg.app_id;
+    app_key = cfg.app_key;
+    app_id_bp = cfg.app_id_bp;
+    app_key_bp = cfg.app_key_bp;
+    exits_worker_url = cfg.exits_worker_url;
+  });
 
 // Colores de los botones principales
 const colors = ["#e74c3c", "#e74c3c", "#8e44ad", "#8e44ad", "#27ae60", "#27ae60", "#f39c12", "#f39c12", "#2980b9", "#2980b9"];
@@ -296,30 +301,135 @@ function fetchTime(line_number, sentit, station_name, station_code, station_inde
 }
 
 // Manejo de exits.json persistente
-function loadExitsJson() {
-  let exits = localStorage.getItem('exitsJson');
-  if (exits) {
-    return JSON.parse(exits);
-  } else {
-    // Si no existe, cargar archivo y guardar en localStorage
-    fetch('exits.json')
-      .then(response => response.text())
-      .then(text => {
-        localStorage.setItem('exitsJson', text);
-      });
+async function loadExitsJson() {
+  console.log("Loading exits JSON from remote");
+  try {
+  let res = await fetch(exits_worker_url);
+  console.log("Fetched exits JSON:", res);
+    let data = await res.json();
+    console.log("Exits JSON data:", data);
+    return data;
+  } catch (e) {
+    console.error("Error fetching exits JSON:", e);
     return {};
   }
 }
 
-function saveExitsJson(exitsObj) {
-  localStorage.setItem('exitsJson', JSON.stringify(exitsObj));
-  console.log("Exits JSON saved:", exitsObj);
+async function saveExitsJson(exitsObj) {
+  try {
+    // Compare (NOT DONE FOR NOW)
+    // if (JSON.stringify(latestData) !== JSON.stringify(localData)) {
+    //   alert('Otro usuario ha modificado las salidas. Tus cambios no se guardarán.');
+    //   // Salir del editor de exits
+    //   setState('lines');
+    //   return; 
+    // }
+    // Si no hay conflicto, guardar
+    const res = await fetch(exits_worker_url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(exitsObj)
+    });
+    if (!res.ok) {
+      throw new Error("Failed to save exits JSON");
+    }
+    // Actualizar localStorage con la nueva versión
+    localStorage.setItem('exitsJson', JSON.stringify(exitsObj));
+    console.log("Exits JSON saved remotely:", exitsObj);
+  } catch (e) {
+    console.error("Error saving exits JSON:", e);
+  }
 }
 
+
+// Pantalla de solo vista de salidas (sin edición)
+async function fetchExitsView(line_number, sentit, station_name, station_code) {
+  let exitsObj = await loadExitsJson();
+  console.log("In line number", line_number, "fetching exits-view for", station_name, "with sentit", sentit, "and station code", station_code);
+  console.log("Exits JSON data for this", exitsObj);
+  let stationRecord = exitsObj[station_code];
+  let exitsList = [];
+  if (stationRecord && stationRecord.exits && stationRecord.exits.length > 0) {
+    exitsList = stationRecord.exits[sentit - 1] || {};
+  }
+  // Determinar qué vagones mostrar: 1, 20 y los del medio con datos
+  let rows = [1];
+  for (let i = 2; i < 20; i++) {
+    if (exitsList[i] && exitsList[i].length > 0) rows.push(i);
+  }
+  rows.push(20);
+
+  // Insertar saltos con '...' si hay huecos entre vagones
+  let fullRows = [];
+  for (let idx = 0; idx < rows.length; idx++) {
+    fullRows.push(rows[idx]);
+    if (idx < rows.length - 1 && rows[idx + 1] - rows[idx] > 1) {
+      // Insertar '...' equidistante
+      fullRows.push('gap');
+    }
+  }
+
+  let table = `<div style='height:calc(100vh - 120px);overflow-y:auto;'><table style="width:100%;border-collapse:collapse;">`;
+  table += `<tr><th style='border:none;text-align:center;'>Vagón</th><th style='border:none;text-align:center;'>Tipo</th><th style='border:none;text-align:center;'>Salidas</th></tr>`;
+  fullRows.forEach(i => {
+    if (i === 'gap') {
+      table += `<tr style='border:none;height:40px;'><td colspan='3' style='border:none;text-align:center;font-size:2em;color:#bbb;'>...</td></tr>`;
+      return;
+    }
+    // Número de vagón grande y centrado
+  let vagonCell = `<div style='font-size:2.5em;font-weight:bold;display:flex;align-items:center;justify-content:center;height:80px;'>${i}</div>`;
+  // Imagen correspondiente
+  let imgSrc = i === 1 ? 'imgs/head.png' : (i === 20 ? 'imgs/tail.png' : 'imgs/middle.png');
+  let imgCell = `<div style='display:flex;align-items:center;justify-content:center;height:80px;'><img src='${imgSrc}' alt='' style='max-height:70px;max-width:70px;transform:rotate(90deg);object-fit:contain;'/></div>`;
+    // Tags para salidas
+    let salidaTags = '';
+    if (exitsList[i] && exitsList[i].length > 0) {
+      salidaTags = exitsList[i].map(txt => {
+        // if txt is L1, color red; L2 purple; L3 green; L4 orange; L5 blue; else gray
+        let colorTag = '#7f8c8d'; // default gray
+        if (txt === 'L1') colorTag = '#e74c3c';
+        else if (txt === 'L2') colorTag = '#8e44ad';
+        else if (txt === 'L3') colorTag = '#27ae60';
+        else if (txt === 'L4') colorTag = '#f39c12';
+        else if (txt === 'L5') colorTag = '#2980b9';
+        return `<span style='display:inline-block;background:${colorTag};color:#fff;border-radius:8px;padding:0.3em 1em;margin:0.2em;font-size:1.1em;'>${txt}</span>`;
+      }).join('');
+    }
+    table += `<tr style='border:none;'>`
+      + `<td style='border:none;text-align:center;'>${vagonCell}</td>`
+      + `<td style='border:none;text-align:center;'>${imgCell}</td>`
+      + `<td style='border:none;text-align:left;'>${salidaTags}</td>`
+      + `</tr>`;
+  });
+  table += `</table></div>`;
+
+  // Botón para editar salidas
+  let editBtn = document.createElement('button');
+  editBtn.textContent = 'Editar salidas';
+  editBtn.style.position = 'fixed';
+  editBtn.style.left = '50%';
+  editBtn.style.bottom = '30px';
+  editBtn.style.transform = 'translateX(-50%)';
+  editBtn.style.background = '#2980b9';
+  editBtn.style.color = '#fff';
+  editBtn.style.fontSize = '1.2em';
+  editBtn.style.padding = '0.7em 2em';
+  editBtn.style.border = 'none';
+  editBtn.style.borderRadius = '8px';
+  editBtn.style.zIndex = '1100';
+  editBtn.onclick = function() {
+    setState('exits-edit', { line: line_number, id_sentit: sentit, station_name, station_code });
+  };
+
+  exitsScreen.innerHTML = `<h2 style='text-align:center;'>Salidas para estación ${station_name} (${station_code}) Sentido ${sentit}</h2>` + table;
+  exitsScreen.appendChild(editBtn);
+}
+
+
 // Pantalla de edición de salidas
-function fetchExitsEdit(line_number, sentit, station_name, station_code) {
+async function fetchExitsEdit(line_number, sentit, station_name, station_code) {
   console.log("In line number", line_number, "fetching exits-edit for", station_name, "with sentit", sentit, "and station code", station_code);
-  let exitsObj = loadExitsJson();
+  let exitsObj = await loadExitsJson();
   let clearBtnPressed = false;
   let stationRecord = exitsObj[station_code];
   let exitsList = [];
@@ -410,7 +520,7 @@ function fetchExitsEdit(line_number, sentit, station_name, station_code) {
         document.body.removeChild(popup);
         clearBtnPressed = false;
         // Refrescar tabla
-        fetchExitsEdit(line_number, sentit, station_name, station_code);
+        setState('exits-edit', { line: line_number, id_sentit: sentit, station_name, station_code });
       };
       clearBtn.onclick = function() {
         inputs.forEach(inp => inp.value = '');
@@ -418,93 +528,6 @@ function fetchExitsEdit(line_number, sentit, station_name, station_code) {
       };
     });
   });
-}
-
-// Pantalla de solo vista de salidas (sin edición)
-function fetchExitsView(line_number, sentit, station_name, station_code) {
-  let exitsObj = loadExitsJson();
-  let stationRecord = exitsObj[station_code];
-  let exitsList = [];
-  if (stationRecord && stationRecord.exits && stationRecord.exits.length > 0) {
-    exitsList = stationRecord.exits[sentit - 1] || {};
-  }
-  // Determinar qué vagones mostrar: 1, 20 y los del medio con datos
-  let rows = [1];
-  for (let i = 2; i < 20; i++) {
-    if (exitsList[i] && exitsList[i].length > 0) rows.push(i);
-  }
-  rows.push(20);
-
-  // Insertar saltos con '...' si hay huecos entre vagones
-  let fullRows = [];
-  for (let idx = 0; idx < rows.length; idx++) {
-    if (idx === 0) {
-      fullRows.push("Frente");
-    } else if (idx === rows.length - 1) {
-      fullRows.push("Cola");
-    } else {
-      fullRows.push(rows[idx]);
-      if (idx < rows.length - 1 && rows[idx + 1] - rows[idx] > 1) {
-        // Insertar '...' equidistante
-        fullRows.push('gap');
-      }
-    }
-  }
-
-  let table = `<div style='height:calc(100vh - 120px);overflow-y:auto;'><table style="width:100%;border-collapse:collapse;">`;
-  table += `<tr><th style='border:none;text-align:center;'>Vagón</th><th style='border:none;text-align:center;'>Tipo</th><th style='border:none;text-align:center;'>Salidas</th></tr>`;
-  fullRows.forEach(i => {
-    if (i === 'gap') {
-      table += `<tr style='border:none;height:40px;'><td colspan='3' style='border:none;text-align:center;font-size:2em;color:#bbb;'>...</td></tr>`;
-      return;
-    }
-    // Número de vagón grande y centrado
-  let vagonCell = `<div style='font-size:2.5em;font-weight:bold;display:flex;align-items:center;justify-content:center;height:80px;'>${i}</div>`;
-  // Imagen correspondiente
-  let imgSrc = i === 1 ? 'imgs/head.png' : (i === 20 ? 'imgs/tail.png' : 'imgs/middle.png');
-  let imgCell = `<div style='display:flex;align-items:center;justify-content:center;height:80px;'><img src='${imgSrc}' alt='' style='max-height:70px;max-width:70px;transform:rotate(90deg);object-fit:contain;'/></div>`;
-    // Tags para salidas
-    let salidaTags = '';
-    if (exitsList[i] && exitsList[i].length > 0) {
-      salidaTags = exitsList[i].map(txt => {
-        // if txt is L1, color red; L2 purple; L3 green; L4 orange; L5 blue; else gray
-        let colorTag = '#7f8c8d'; // default gray
-        if (txt === 'L1') colorTag = '#e74c3c';
-        else if (txt === 'L2') colorTag = '#8e44ad';
-        else if (txt === 'L3') colorTag = '#27ae60';
-        else if (txt === 'L4') colorTag = '#f39c12';
-        else if (txt === 'L5') colorTag = '#2980b9';
-        return `<span style='display:inline-block;background:${colorTag};color:#fff;border-radius:8px;padding:0.3em 1em;margin:0.2em;font-size:1.1em;'>${txt}</span>`;
-      }).join('');
-    }
-    table += `<tr style='border:none;'>`
-      + `<td style='border:none;text-align:center;'>${vagonCell}</td>`
-      + `<td style='border:none;text-align:center;'>${imgCell}</td>`
-      + `<td style='border:none;text-align:left;'>${salidaTags}</td>`
-      + `</tr>`;
-  });
-  table += `</table></div>`;
-
-  // Botón para editar salidas
-  let editBtn = document.createElement('button');
-  editBtn.textContent = 'Editar salidas';
-  editBtn.style.position = 'fixed';
-  editBtn.style.left = '50%';
-  editBtn.style.bottom = '30px';
-  editBtn.style.transform = 'translateX(-50%)';
-  editBtn.style.background = '#2980b9';
-  editBtn.style.color = '#fff';
-  editBtn.style.fontSize = '1.2em';
-  editBtn.style.padding = '0.7em 2em';
-  editBtn.style.border = 'none';
-  editBtn.style.borderRadius = '8px';
-  editBtn.style.zIndex = '1100';
-  editBtn.onclick = function() {
-    setState('exits-edit', { line: line_number, id_sentit: sentit, station_name, station_code });
-  };
-
-  exitsScreen.innerHTML = `<h2 style='text-align:center;'>Salidas para estación ${station_name} (${station_code}) Sentido ${sentit}</h2>` + table;
-  exitsScreen.appendChild(editBtn);
 }
 
 // Initial state
