@@ -92,7 +92,7 @@ function renderState(state, data = {}) {
     stationsButtons.classList.add('hidden');
     exitsScreen.innerHTML = '';
     exitsEditScreen.innerHTML = '';
-    // remainingTimeScreen is updated by fetchTime
+    fetchTime(data.line, data.id_sentit, data.station_name, data.station_code, data.station_index);
   } else if (state === "after-stations") {
     linesButtons.classList.add('hidden');
     stationsButtons.classList.remove('hidden');
@@ -108,13 +108,13 @@ function renderState(state, data = {}) {
     stationsButtons.classList.add('hidden');
     remainingTimeScreen.innerHTML = '';
     exitsEditScreen.innerHTML = '';
-    // exitsScreen is updated by fetchExitsView
+    fetchExitsView(data.line, data.id_sentit, data.station_name, data.station_code);
   } else if (state === "exits-edit") {
     linesButtons.classList.add('hidden');
     stationsButtons.classList.add('hidden');
     remainingTimeScreen.innerHTML = '';
     exitsScreen.innerHTML = '';
-    // exitsEditScreen is updated by fetchExitsEdit
+    fetchExitsEdit(data.line, data.id_sentit, data.station_name, data.station_code);
   }
 }
 
@@ -170,10 +170,8 @@ function showstationsButtons(label, id_sentit, startIndex = 0) {
       // O ir a la pantalla de salidas si el estado es "after-stations"
       if (getState() === "stations") {
         setState("time", { line, id_sentit, station_name, station_code: stops[i], station_index: i + startIndex });
-        fetchTime(line, id_sentit, station_name, stops[i], i + startIndex);
       } else if (getState() === "after-stations") {
-      setState("exits", { line, id_sentit, station_name, station_code: stops[i], station_index: i + startIndex });
-      fetchExitsView(line, id_sentit, station_name, stops[i]);
+        setState("exits", { line, id_sentit, station_name, station_code: stops[i], station_index: i + startIndex });
       }
     });
     stationsButtons.appendChild(btn);
@@ -503,7 +501,6 @@ function fetchExitsView(line_number, sentit, station_name, station_code) {
   editBtn.style.zIndex = '1100';
   editBtn.onclick = function() {
     setState('exits-edit', { line: line_number, id_sentit: sentit, station_name, station_code });
-    fetchExitsEdit(line_number, sentit, station_name, station_code);
   };
 
   exitsScreen.innerHTML = `<h2 style='text-align:center;'>Salidas para estación ${station_name} (${station_code}) Sentido ${sentit}</h2>` + table;
