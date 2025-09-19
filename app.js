@@ -236,6 +236,7 @@ function fetchTime(line_number, sentit, station_name, station_code, station_inde
   linesButtons.classList.add('hidden');
   stationsButtons.classList.add('hidden');
   let secondsArrivals = [];
+  let firstTimeFound = false;
 
   async function update() {
     try {
@@ -247,7 +248,9 @@ function fetchTime(line_number, sentit, station_name, station_code, station_inde
         console.log("Timestamp:", now.toLocaleString());
       } else {
         console.log("No timestamp available");
-        remainingTimeScreen.innerHTML = "<p>No se encontró información de tiempo.</p>";
+        if (!firstTimeFound) {
+          remainingTimeScreen.innerHTML = "<p>No se encontró información de tiempo.</p>";
+        }
         return;
       }
       // Custom pretty print
@@ -270,6 +273,7 @@ function fetchTime(line_number, sentit, station_name, station_code, station_inde
                 if (traj.propers_trens && traj.propers_trens.length > 0) {
                   traj.propers_trens.forEach((train, idx) => {
                     if (idx < 2) { // solo mostrar los dos primeros
+                      firstTimeFound = true;
                       const seconds = Math.round((train.temps_arribada - now.getTime()) / 1000);
                       secondsArrivals[idx] = seconds;
                       let proxima_llegada_label;
