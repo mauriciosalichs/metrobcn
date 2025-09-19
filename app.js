@@ -289,6 +289,9 @@ function fetchTime(line_number, sentit, station_name, station_code, station_inde
                   });
                 } else {
                   output += `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Próxima partida: No disponible<br>`;
+                  if (413 === station_code) {
+                    output += `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Por suerte, nadie usa esta estación de metro.<br>`;
+                  }
                 }
               });
             }
