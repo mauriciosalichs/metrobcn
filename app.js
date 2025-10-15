@@ -180,10 +180,70 @@ function showScreen(id) {
   if (id === 'infoScreen') {
     alert("Next Metro Barcelona\nVersión 1.0\nDesarrollado por msalichs");
   } else if (id === 'favScreen') {
-    alert("Funcionalidad de favoritos no implementada aún.");
+    renderFavScreen();
   } else if (id === 'settingsScreen') {
     alert("Funcionalidad de ajustes no implementada aún.");
   }
+}
+
+// Renderizar la pantalla de favoritos
+function renderFavScreen() {
+  // Obtener los 6 pares más consultados
+  let favs = JSON.parse(localStorage.getItem('stationSentitCounts') || '{}');
+  let favArr = Object.values(favs);
+  favArr.sort((a, b) => b.count - a.count);
+  favArr = favArr.slice(0, 6);
+
+  // Crear vista de cartas
+  let html = `<h2 style="text-align:center;">Favoritos</h2>`;
+  html += `<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:1em;">`;
+  favArr.forEach(fav => {
+    // Obtener color de la línea
+    let lineIdx = lines.findIndex(l => l.startsWith(fav.line));
+    let color = colors[lineIdx] || "#bdc3c7";
+    let sentitLabel = lines[lineIdx + (fav.sentit -1)];
+    html += `
+      <div style="
+        background:${color};
+        color:#fff;
+        border-radius:16px;
+        padding:1em;
+        min-width:280px;
+        max-width:320px;
+        margin-bottom:1em;
+        box-shadow:0 2px 8px #0002;
+        cursor:pointer;
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        font-size:1.1em;
+      " onclick="window.__favClick('${fav.line}',${fav.sentit},'${fav.station_name.replace(/'/g,"\\'")}',${fav.station_code})">
+        <div style="font-weight:bold;font-size:1.3em;margin-bottom:0.5em;">${fav.station_name}</div>
+        <div style="margin-bottom:0.5em;">${sentitLabel}</div>
+        <div style="font-size:0.9em;">Consultas: ${fav.count}</div>
+      </div>
+    `;
+  });
+  html += `</div>`;
+  // Botón volver
+  html += `<button style="
+    position:fixed;left:50%;bottom:30px;transform:translateX(-50%);
+    background:#2980b9;color:#fff;font-size:1.2em;padding:0.7em 2em;
+    border:none;border-radius:8px;z-index:1100;" onclick="setState('lines')">Volver</button>`;
+
+  // Mostrar en pantalla
+  linesButtons.classList.add('hidden');
+  stationsButtons.classList.add('hidden');
+  remainingTimeScreen.innerHTML = '';
+  exitsScreen.innerHTML = '';
+  exitsEditScreen.innerHTML = '';
+  remainingTimeScreen.innerHTML = html;
+
+  // Handler global para click en carta
+  window.__favClick = function(line, sentit, station_name, station_code) {
+    incrementStationSentitCount(station_code, sentit, line, station_name);
+    setState("time", { line, id_sentit: sentit, station_name, station_code, station_index: 0 });
+  };
 }
 
 function showstationsButtons(label, id_sentit, startIndex = 0) {
@@ -214,6 +274,8 @@ function showstationsButtons(label, id_sentit, startIndex = 0) {
     btn.textContent = `${station_name}`;
     btn.style.backgroundColor = "#bdc3c7";
     btn.addEventListener('click', () => {
+      // Incrementar contador de consultas
+      incrementStationSentitCount(stops[i], id_sentit, line, station_name);
       // Al hacer clic en una estación, ir a la pantalla de tiempo si el estado es "stations"
       // O ir a la pantalla de salidas si el estado es "after-stations"
       if (getState() === "stations") {
@@ -224,6 +286,17 @@ function showstationsButtons(label, id_sentit, startIndex = 0) {
     });
     stationsButtons.appendChild(btn);
   }
+}
+
+// Función para actualizar el contador de consultas en localStorage
+function incrementStationSentitCount(station_code, sentit, line, station_name) {
+  let favs = JSON.parse(localStorage.getItem('stationSentitCounts') || '{}');
+  const key = `${station_code},${sentit}`;
+  if (!favs[key]) {
+    favs[key] = { count: 0, line, station_name, station_code, sentit };
+  }
+  favs[key].count += 1;
+  localStorage.setItem('stationSentitCounts', JSON.stringify(favs));
 }
 
 // Función para consultar texto en la web
@@ -283,8 +356,9 @@ function fetchTime(line_number, sentit, station_name, station_code, station_inde
                       // Format seconds as m:ss
                       const min = Math.floor(seconds / 60);
                       const sec = Math.abs(seconds % 60);
+                      const color = seconds >= 60 ? '#000000ff' : '#f80b0bff';
                       const formatted = `${min}:${sec.toString().padStart(2, '0')}`;
-                      output += `<div id="secondsToArrival${idx + 1}" style="color:red;font-size:${7 - (idx*3)}em;margin-top:10px;">${formatted}</div>`;
+                      output += `<div id="secondsToArrival${idx + 1}" style="color:${color};font-size:${7 - (idx*3)}em;margin-top:10px;">${formatted}</div>`;
                     }
                   });
                 } else {
@@ -342,7 +416,14 @@ function fetchTime(line_number, sentit, station_name, station_code, station_inde
         remainingTimeScreen.innerHTML = `[${station_name}] Sin información`;
       }
     } catch (err) {
-      remainingTimeScreen.textContent = `Error al obtener datos: ${err.message}`;
+      if (firstTimeFound) {
+        // No hacer nada, mantener la última información válida, pero cambiar el color a gris
+        Array.from(remainingTimeScreen.querySelectorAll('div[id^="secondsToArrival"]')).forEach(el => {
+          el.style.color = '#888888ff';
+        });
+      } else {
+        remainingTimeScreen.innerHTML = "<p>Error al obtener datos. Reintentando...</p>";
+      }
     }
   }
 
