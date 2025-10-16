@@ -3,7 +3,7 @@ document.body.insertAdjacentHTML('afterbegin', `
     width: 100vw;
     background: #000;
     color: #fff;
-    font-size: 1em;
+    font-size: 0.5em;
     font-family: sans-serif;
     text-align: center;
     padding: 0.5em 0;
@@ -15,7 +15,7 @@ document.body.insertAdjacentHTML('afterbegin', `
     Next Metro Barcelona
   </div>
 `);
-document.body.style.paddingTop = '2em'; // Prevent content under the title
+document.body.style.paddingTop = '1em'; // Prevent content under the title
 
 const linesButtons = document.getElementById('lines-buttons');
 const stationsButtons = document.getElementById('stations-buttons');
@@ -166,8 +166,8 @@ extraScreens.forEach(({ id, img }) => {
   btn.style.display = 'flex';
   btn.style.alignItems = 'center';
   btn.style.justifyContent = 'center';
-  btn.style.background = '#575454d0';
-  btn.style.border = '1px solid #030303ff';
+  btn.style.background = '#ffffffd0';
+  btn.style.border = '1px solid #ffffffff';
   btn.innerHTML = `<img src='${img}' style='width:25px;height:25px;display:block;margin:auto;' alt='${id}'/>`;
   btn.onclick = () => {
     showScreen(id);
@@ -274,11 +274,11 @@ function showstationsButtons(label, id_sentit, startIndex = 0) {
     btn.textContent = `${station_name}`;
     btn.style.backgroundColor = "#bdc3c7";
     btn.addEventListener('click', () => {
-      // Incrementar contador de consultas
-      incrementStationSentitCount(stops[i], id_sentit, line, station_name);
       // Al hacer clic en una estación, ir a la pantalla de tiempo si el estado es "stations"
       // O ir a la pantalla de salidas si el estado es "after-stations"
       if (getState() === "stations") {
+        // Incrementar contador de consultas
+        incrementStationSentitCount(stops[i], id_sentit, line, station_name);
         setState("time", { line, id_sentit, station_name, station_code: stops[i], station_index: i + startIndex });
       } else if (getState() === "after-stations") {
         setState("exits", { line, id_sentit, station_name, station_code: stops[i], station_index: i + startIndex });
