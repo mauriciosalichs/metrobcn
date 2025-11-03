@@ -198,10 +198,6 @@ function renderSettingsScreen() {
       <input type="range" id="textSizeSlider" min="0.7" max="2.0" step="0.05" value="${textSize}" style="width:60%;vertical-align:middle;">
       <span id="textSizeValue" style="font-size:1.1em;margin-left:1em;">${textSize}</span>
     </div>
-    <button style="
-      position:fixed;left:50%;bottom:30px;transform:translateX(-50%);
-      background:#2980b9;color:#fff;font-size:1.2em;padding:0.7em 2em;
-      border:none;border-radius:8px;z-index:1100;" onclick="setState('lines')">Volver</button>
   `;
   // Show settings screen
   linesButtons.classList.add('hidden');
@@ -274,11 +270,6 @@ function renderFavScreen() {
     `;
   });
   html += `</div>`;
-  // Botón volver
-  html += `<button style="
-    position:fixed;left:50%;bottom:30px;transform:translateX(-50%);
-    background:#2980b9;color:#fff;font-size:1.2em;padding:0.7em 2em;
-    border:none;border-radius:8px;z-index:1100;" onclick="setState('lines')">Volver</button>`;
 
   // Mostrar en pantalla
   linesButtons.classList.add('hidden');
