@@ -182,9 +182,58 @@ function showScreen(id) {
   } else if (id === 'favScreen') {
     renderFavScreen();
   } else if (id === 'settingsScreen') {
-    alert("Funcionalidad de ajustes no implementada aún.");
+    renderSettingsScreen();
   }
 }
+
+// --- SETTINGS SCREEN ---
+function renderSettingsScreen() {
+  // Get current value or default
+  let textSize = parseFloat(localStorage.getItem('appTextSize') || '1.0');
+  // HTML for settings
+  let html = `
+    <h2 style="text-align:center;">Ajustes</h2>
+    <div style="margin:2em 0;">
+      <label for="textSizeSlider" style="font-size:1.1em;">Tamaño texto:</label>
+      <input type="range" id="textSizeSlider" min="0.7" max="2.0" step="0.05" value="${textSize}" style="width:60%;vertical-align:middle;">
+      <span id="textSizeValue" style="font-size:1.1em;margin-left:1em;">${textSize}</span>
+    </div>
+    <button style="
+      position:fixed;left:50%;bottom:30px;transform:translateX(-50%);
+      background:#2980b9;color:#fff;font-size:1.2em;padding:0.7em 2em;
+      border:none;border-radius:8px;z-index:1100;" onclick="setState('lines')">Volver</button>
+  `;
+  // Show settings screen
+  linesButtons.classList.add('hidden');
+  stationsButtons.classList.add('hidden');
+  remainingTimeScreen.innerHTML = '';
+  exitsScreen.innerHTML = '';
+  exitsEditScreen.innerHTML = '';
+  remainingTimeScreen.innerHTML = html;
+
+  // Slider logic
+  const slider = document.getElementById('textSizeSlider');
+  const valueLabel = document.getElementById('textSizeValue');
+  slider.oninput = function() {
+    valueLabel.textContent = this.value;
+    applyTextSize(this.value);
+    localStorage.setItem('appTextSize', this.value);
+  };
+}
+
+// Apply text size to all buttons
+function applyTextSize(size) {
+  document.querySelectorAll('button').forEach(btn => {
+    btn.style.fontSize = `${size}em`;
+  });
+}
+
+// On load, apply saved text size
+window.addEventListener('DOMContentLoaded', () => {
+  setState("lines");
+  let textSize = parseFloat(localStorage.getItem('appTextSize') || '1.0');
+  applyTextSize(textSize);
+});
 
 // Renderizar la pantalla de favoritos
 function renderFavScreen() {
