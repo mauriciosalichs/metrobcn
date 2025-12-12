@@ -368,6 +368,7 @@ function fetchTime(line_number, sentit, station_name, station_code, station_inde
       }
       // Custom pretty print
       let output = "";
+      let finalOutput = "";
       secondsArrivals = [];
       if (data.linies && data.linies.length > 0) {
         const linia = data.linies[0]
@@ -379,7 +380,25 @@ function fetchTime(line_number, sentit, station_name, station_code, station_inde
         output += `Linea: ${linia.nom_linia} <br>`;
         output += `Estación: ${station_name} <br>`;
         if (linia.estacions && linia.estacions.length > 0) {
-          linia.estacions.forEach(est => {
+            linia.estacions.forEach(est => {
+            // Mostrar llegada de tren en la otra dirección
+            if (est.linies_trajectes && est.linies_trajectes.length > 0 && est.id_sentit != sentit) {
+              est.linies_trajectes.forEach(traj => {
+              if (traj.propers_trens && traj.propers_trens.length > 0) {
+                traj.propers_trens.forEach((train, idx) => {
+                const seconds = Math.round((train.temps_arribada - now.getTime()) / 1000);
+                const min = Math.floor(seconds / 60);
+                const sec = Math.abs(seconds % 60);
+                const color = seconds >= 60 ? '#000000ff' : '#f80b0bff';
+                const formatted = `${min}:${sec.toString().padStart(2, '0')}`;
+                finalOutput = `<div id="otherDirectionArrival" style="color:${color};font-size:1.1em;margin-top:2em;text-align:center;opacity:0.7;">
+                    Llegada de tren en la otra dirección: <span style="font-weight:bold;">${formatted}</span>
+                    </div>`;
+                });
+              }
+              });
+            }
+            // Mostrar llegada de tren en el sentido actual
             if (est.linies_trajectes && est.linies_trajectes.length > 0 && est.id_sentit == sentit) {
               est.linies_trajectes.forEach(traj => {
                 output += `Sentido: ${traj.desti_trajecte} <br>`;
@@ -411,6 +430,7 @@ function fetchTime(line_number, sentit, station_name, station_code, station_inde
             }
           });
         }
+        output += finalOutput;
         remainingTimeScreen.innerHTML = output;
 
         // Agregar botón Seleccionar destino
@@ -444,13 +464,33 @@ function fetchTime(line_number, sentit, station_name, station_code, station_inde
               let sec = parseInt(parts[1], 10);
               let total = min * 60 + sec;
               if (total > 0) {
-                total = total - 1;
-                let newMin = Math.floor(total / 60);
-                let newSec = Math.abs(total % 60);
-                el.textContent = `${newMin}:${newSec.toString().padStart(2, '0')}`;
+          total = total - 1;
+          let newMin = Math.floor(total / 60);
+          let newSec = Math.abs(total % 60);
+          el.textContent = `${newMin}:${newSec.toString().padStart(2, '0')}`;
               }
             }
           });
+
+          // Also decrement otherDirectionArrival if present
+          const otherDirEl = document.getElementById('otherDirectionArrival');
+          if (otherDirEl) {
+            // Find the <span> inside for the time
+            const span = otherDirEl.querySelector('span');
+            if (span) {
+              let currentText = span.textContent;
+              let parts = currentText.split(':');
+              let min = parseInt(parts[0], 10);
+              let sec = parseInt(parts[1], 10);
+              let total = min * 60 + sec;
+              if (total > 0) {
+          total = total - 1;
+          let newMin = Math.floor(total / 60);
+          let newSec = Math.abs(total % 60);
+          span.textContent = `${newMin}:${newSec.toString().padStart(2, '0')}`;
+              }
+            }
+          }
         }, 1000);
       } else {
         remainingTimeScreen.innerHTML = `[${station_name}] Sin información`;
