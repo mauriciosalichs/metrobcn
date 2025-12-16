@@ -385,18 +385,22 @@ function fetchTime(line_number, sentit, station_name, station_code, station_inde
             if (est.linies_trajectes && est.linies_trajectes.length > 0 && est.id_sentit != sentit) {
               est.linies_trajectes.forEach(traj => {
               if (traj.propers_trens && traj.propers_trens.length > 0) {
-                traj.propers_trens.forEach((train, idx) => {
-                const seconds = Math.round((train.temps_arribada - now.getTime()) / 1000);
-                const min = Math.floor(seconds / 60);
-                const sec = Math.abs(seconds % 60);
-                const color = seconds >= 60 ? '#000000ff' : '#f80b0bff';
-                const formatted = `${min}:${sec.toString().padStart(2, '0')}`;
-                finalOutput = `<div id="otherDirectionArrival" style="color:${color};font-size:1.1em;margin-top:2em;text-align:center;opacity:0.7;">
-                    Llegada de tren en la otra dirección: <span style="font-weight:bold;">${formatted}</span>
-                    </div>`;
-                });
+                for (const train of traj.propers_trens) {
+                  const seconds = Math.round((train.temps_arribada - now.getTime()) / 1000);
+                  // Filtro opcional: Solo procesar si el tren no ha pasado todavía
+                  if (seconds > 0) {
+                      const min = Math.floor(seconds / 60);
+                      const sec = Math.abs(seconds % 60);
+                      const color = seconds >= 60 ? '#000000ff' : '#f80b0bff';
+                      const formatted = `${min}:${sec.toString().padStart(2, '0')}`;
+                      finalOutput = `
+                          <div id="otherDirectionArrival" style="color:${color};font-size:1.1em;margin-top:2em;text-align:center;opacity:0.7;">
+                              Llegada de tren en la otra dirección: <span style="font-weight:bold;">${formatted}</span>
+                          </div>`;
+                      break; 
+                  }
+                }
               }
-              });
             }
             // Mostrar llegada de tren en el sentido actual
             if (est.linies_trajectes && est.linies_trajectes.length > 0 && est.id_sentit == sentit) {
