@@ -393,7 +393,7 @@ function fetchTime(line_number, sentit, station_name, station_code, station_inde
                       const sec = Math.abs(seconds % 60);
                       const color = seconds >= 60 ? '#000000ff' : '#f80b0bff';
                       const formatted = `${min}:${sec.toString().padStart(2, '0')}`;
-                      finalOutput = `
+                      finalOutput += `
                           <div id="otherDirectionArrival" style="color:${color};font-size:1.1em;margin-top:2em;text-align:center;opacity:0.7;">
                               Llegada de tren en la otra dirección: <span style="font-weight:bold;">${formatted}</span>
                           </div>`;
@@ -401,6 +401,7 @@ function fetchTime(line_number, sentit, station_name, station_code, station_inde
                   }
                 }
               }
+              }); // <-- CIERRE CORRECTO DEL forEach de la otra dirección
             }
             // Mostrar llegada de tren en el sentido actual
             if (est.linies_trajectes && est.linies_trajectes.length > 0 && est.id_sentit == sentit) {
@@ -429,10 +430,10 @@ function fetchTime(line_number, sentit, station_name, station_code, station_inde
                   if (413 === station_code) {
                     output += `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Por suerte, nadie usa esta estación de metro.<br>`;
                   }
-                }
+                } 
               });
             }
-          });
+          }); // <-- CIERRE DEL forEach principal de estacions
         }
         output += finalOutput;
         remainingTimeScreen.innerHTML = output;
